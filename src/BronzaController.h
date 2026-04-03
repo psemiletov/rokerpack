@@ -2,6 +2,7 @@
 
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
+#include <memory>
 
 // UID Контроллера
 static const Steinberg::FUID BronzaProcessorUID (0x5053454D, 0x42524F4E, 0x5A413130, 0x31303130);
@@ -19,10 +20,8 @@ public:
     Steinberg::tresult PLUGIN_API initialize (Steinberg::FUnknown* context) override;
     Steinberg::tresult PLUGIN_API terminate () override;
     
-    // Отключаем GUI - возвращаем nullptr
-    Steinberg::IPlugView* PLUGIN_API createView (Steinberg::FIDString name) override {
-        return nullptr;
-    }
+    // Создание ImGui GUI
+    Steinberg::IPlugView* PLUGIN_API createView (Steinberg::FIDString name) override;
     
     Steinberg::tresult PLUGIN_API getParamStringByValue (
         Steinberg::Vst::ParamID id, 

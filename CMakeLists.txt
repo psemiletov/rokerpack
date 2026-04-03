@@ -11,14 +11,12 @@ endif()
 include(FetchContent)
 
 # ============================================================================
-# ОФИЦИАЛЬНЫЕ ОПЦИИ SDK ДЛЯ ОТКЛЮЧЕНИЯ ПРИМЕРОВ И GUI
-# Должны быть установлены ДО вызова FetchContent_Declare
+# ОФИЦИАЛЬНЫЕ ОПЦИИ SDK
 # ============================================================================
 set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES OFF CACHE BOOL "Disable VST3 plugin examples" FORCE)
 set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES OFF CACHE BOOL "Disable VST3 hosting examples" FORCE)
 set(SMTG_ENABLE_VSTGUI_SUPPORT OFF CACHE BOOL "Disable VSTGUI support" FORCE)
 
-# Дополнительные опции для полной чистоты
 set(SMTG_BUILD_VST3_TESTS OFF CACHE BOOL "" FORCE)
 set(SMTG_BUILD_VSTGUI OFF CACHE BOOL "" FORCE)
 set(SMTG_BUILD_AAX_WRAPPER OFF CACHE BOOL "" FORCE)
@@ -30,32 +28,43 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
-# Передаем опции в дочерний CMake через переменные окружения
+# ============================================================================
+# Dear ImGui - только для UI, без GLFW/OpenGL зависимостей
+# ============================================================================
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.89.9
+    GIT_SHALLOW TRUE
+)
+
 set(ENV{SMTG_ENABLE_VST3_PLUGIN_EXAMPLES} "OFF")
 set(ENV{SMTG_ENABLE_VST3_HOSTING_EXAMPLES} "OFF")
 set(ENV{SMTG_ENABLE_VSTGUI_SUPPORT} "OFF")
 
-FetchContent_MakeAvailable(vst3sdk)
+FetchContent_MakeAvailable(vst3sdk imgui)
 
-# Если после всех манипуляций vstgui всё ещё пытается собраться,
-# принудительно превращаем его в пустышку
 if(TARGET vstgui AND NOT TARGET vstgui::vstgui)
     add_library(vstgui::vstgui ALIAS vstgui)
 endif()
 
-# Определяем макросы для отключения GUI в коде
 add_compile_definitions(
     VSTGUI_NOT_SUPPORTED
     SMTG_DISABLE_VSTGUI_SUPPORT
 )
 
+# Поиск X11 для Linux
+find_package(X11 REQUIRED)
+
 # ============================================================================
-# Ваш плагин
+# Плагин
 # ============================================================================
 set(BRONZA_SOURCES
     src/factory.cpp
     src/BronzaProcessor.cpp
     src/BronzaController.cpp
+    src/BronzaPlugView.cpp
+    src/ImGuiRenderer.cpp
     src/dsp.cpp
     src/fx-resofilter.cpp
     src/vst3_entry.cpp
@@ -64,11 +73,22 @@ set(BRONZA_SOURCES
 set(BRONZA_HEADERS
     src/BronzaProcessor.h
     src/BronzaController.h
+    src/BronzaPlugView.h
+    src/ImGuiRenderer.h
     src/dsp.h
     src/fx-resofilter.h
 )
 
-add_library(Bronza SHARED ${BRONZA_SOURCES} ${BRONZA_HEADERS})
+# Dear ImGui источники (только ядро, без бэкендов)
+set(IMGUI_SOURCES
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+)
+
+add_library(Bronza SHARED ${BRONZA_SOURCES} ${BRONZA_HEADERS} ${IMGUI_SOURCES})
 
 set_target_properties(Bronza PROPERTIES
     PREFIX ""
@@ -83,12 +103,15 @@ target_include_directories(Bronza PRIVATE
     ${vst3sdk_SOURCE_DIR}/public.sdk/source/main
     ${vst3sdk_SOURCE_DIR}/public.sdk/source/vst
     ${vst3sdk_SOURCE_DIR}/public.sdk/source/common
+    ${imgui_SOURCE_DIR}
+    ${X11_INCLUDE_DIR}
 )
 
 target_link_libraries(Bronza PRIVATE 
     pluginterfaces
     base
     sdk
+    ${X11_LIBRARIES}
 )
 
 if(LINUX)
@@ -108,8 +131,7 @@ install(TARGETS Bronza
 
 message(STATUS "========================================")
 message(STATUS "Bronza VST3 Plugin Configuration:")
-message(STATUS "  - VSTGUI: DISABLED (official option)")
-message(STATUS "  - Plugin Examples: DISABLED")
-message(STATUS "  - Hosting Examples: DISABLED")
+message(STATUS "  - ImGui GUI: ENABLED")
+message(STATUS "  - Backend: X11 (Linux)")
 message(STATUS "  - Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "========================================")
