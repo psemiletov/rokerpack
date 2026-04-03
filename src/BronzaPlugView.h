@@ -7,6 +7,7 @@
 #include <memory>
 #include <X11/Xlib.h>
 #include <chrono>
+#include <cstring>
 
 class BronzaPlugView : public Steinberg::IPlugView {
 public:
@@ -48,6 +49,8 @@ private:
     Pixmap xPixmap = 0;
     GC xGC = nullptr;
     XImage* xImage = nullptr;
+    char* pixelData = nullptr;
+    
     std::chrono::steady_clock::time_point lastFrameTime;
     bool needsRepaint = true;
 };
