@@ -6,6 +6,7 @@
 #include "ImGuiRenderer.h"
 #include <memory>
 #include <X11/Xlib.h>
+#include <chrono>
 
 class BronzaPlugView : public Steinberg::IPlugView {
 public:
@@ -32,6 +33,8 @@ public:
     Steinberg::uint32 PLUGIN_API release() override;
     
 private:
+    void paint();
+    
     std::shared_ptr<ImGuiRenderer> renderer;
     Steinberg::Vst::EditController* controller = nullptr;
     Steinberg::IPlugFrame* plugFrame = nullptr;
@@ -45,4 +48,6 @@ private:
     Pixmap xPixmap = 0;
     GC xGC = nullptr;
     XImage* xImage = nullptr;
+    std::chrono::steady_clock::time_point lastFrameTime;
+    bool needsRepaint = true;
 };

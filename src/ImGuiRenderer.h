@@ -11,6 +11,8 @@ public:
     ImGuiRenderer(int width = 800, int height = 600);
     ~ImGuiRenderer();
     
+    const std::vector<uint8_t>& getPixelBuffer() const { return pixels; }
+    
     bool initialize();
     void shutdown();
     

@@ -3,6 +3,25 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+void BronzaPlugView::paint() {
+    if (!renderer || !xDisplay || !xWindow || !xImage || !xPixmap) {
+        return;
+    }
+    
+    // Получить пиксели из renderer
+    const auto& pixels = renderer->getPixelBuffer();
+    
+    if (!pixels.empty()) {
+        // Скопировать пиксели в XImage
+        std::memcpy(xImage->data, pixels.data(), pixels.size());
+        
+        // Отправить на экран
+        XPutImage(xDisplay, xWindow, xGC, xImage, 
+                  0, 0, 0, 0, width, height);
+        XFlush(xDisplay);
+    }
+}
+
 BronzaPlugView::BronzaPlugView(Steinberg::Vst::EditController* ctrl)
     : controller(ctrl) {
     
@@ -50,6 +69,7 @@ Steinberg::tresult PLUGIN_API BronzaPlugView::isPlatformTypeSupported(Steinberg:
     return Steinberg::kResultFalse;
 }
 
+
 Steinberg::tresult PLUGIN_API BronzaPlugView::attached(void* parent, Steinberg::FIDString type) {
     try {
         if (!renderer || !renderer->initialize()) {
@@ -69,30 +89,35 @@ Steinberg::tresult PLUGIN_API BronzaPlugView::attached(void* parent, Steinberg::
         Visual* visual = DefaultVisual(xDisplay, screen);
         int depth = DefaultDepth(xDisplay, screen);
         
-        // Создаём pixmap для отрисовки
+        // Создаём pixmap и графический контекст
         xPixmap = XCreatePixmap(xDisplay, xWindow, 800, 600, depth);
         xGC = XCreateGC(xDisplay, xPixmap, 0, nullptr);
         
-        // Создаём XImage для работы с пикселями
+        // Создаём XImage
+        char* pixelData = (char*)malloc(800 * 600 * 4);
         xImage = XCreateImage(xDisplay, visual, depth, ZPixmap, 0,
-                             (char*)malloc(800 * 600 * 4), 800, 600, 32, 0);
+                              pixelData, 800, 600, 32, 0);
         
-        std::cout << "[Bronza] PlugView attached, X11 window initialized" << std::endl;
+        if (!xImage) {
+            std::cerr << "[Bronza] Failed to create XImage" << std::endl;
+            free(pixelData);
+            return Steinberg::kResultFalse;
+        }
         
-        // Рисуем первый раз
+        // Первая отрисовка
         renderer->newFrame();
         renderer->endFrame();
+        paint();
         
+        std::cout << "[Bronza] PlugView attached successfully" << std::endl;
         return Steinberg::kResultOk;
         
     } catch (const std::exception& e) {
         std::cerr << "[Bronza] Exception in attached(): " << e.what() << std::endl;
         return Steinberg::kResultFalse;
-    } catch (...) {
-        std::cerr << "[Bronza] Unknown exception in attached()" << std::endl;
-        return Steinberg::kResultFalse;
     }
 }
+
 
 Steinberg::tresult PLUGIN_API BronzaPlugView::removed() {
     if (renderer) {
@@ -145,13 +170,23 @@ Steinberg::tresult PLUGIN_API BronzaPlugView::checkSizeConstraint(Steinberg::Vie
     }
     return Steinberg::kResultFalse;
 }
-
+/*
 Steinberg::tresult PLUGIN_API BronzaPlugView::onFocus(Steinberg::TBool state) {
     std::cout << "[Bronza] GUI focus: " << (state ? "true" : "false") << std::endl;
     if (state && renderer && xDisplay && xWindow) {
         // Перерисовка при получении фокуса
         renderer->newFrame();
         renderer->endFrame();
+    }
+    return Steinberg::kResultOk;
+}
+*/
+
+Steinberg::tresult PLUGIN_API BronzaPlugView::onFocus(Steinberg::TBool state) {
+    if (state && renderer && xDisplay && xWindow) {
+        renderer->newFrame();
+        renderer->endFrame();
+        paint();
     }
     return Steinberg::kResultOk;
 }
