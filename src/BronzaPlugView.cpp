@@ -7,19 +7,25 @@
 BronzaPlugView::BronzaPlugView(Steinberg::Vst::EditController* ctrl)
     : controller(ctrl) {
     
-    renderer = std::make_shared<ImGuiRenderer>(800, 600);
+    renderer = std::make_shared<ImGuiRenderer>(800, 300);
     
     if (controller) {
-        // Установка callbacks для обновления параметров
+        // Callback для установки параметров (GUI -> параметры плагина)
         renderer->setParameterCallback([this](int paramId, float value) {
             if (controller) {
-                controller->setParamNormalized(paramId, value);
+                // Нормализуем значение и устанавливаем в контроллер
+                Steinberg::Vst::ParamValue normalized = value;
+                controller->setParamNormalized(paramId, normalized);
+                
+                std::cout << "[Bronza] Parameter " << paramId << " changed to " << value << std::endl;
             }
         });
         
+        // Callback для получения текущих значений параметров (параметры -> GUI)
         renderer->setGetParameterCallback([this](int paramId) -> float {
             if (controller) {
-                return controller->getParamNormalized(paramId);
+                Steinberg::Vst::ParamValue normalized = controller->getParamNormalized(paramId);
+                return (float)normalized;
             }
             return 0.0f;
         });
@@ -181,6 +187,35 @@ Steinberg::tresult PLUGIN_API BronzaPlugView::onKeyUp(Steinberg::char16 key, Ste
     return Steinberg::kResultOk;
 }
 
+Steinberg::tresult PLUGIN_API BronzaPlugView::onMouseDown(Steinberg::int32 x, Steinberg::int32 y) {
+    lastMouseX = x;
+    lastMouseY = y;
+    renderer->onMouseDown(x, y);
+    needsRepaint = true;
+    paint();
+    return Steinberg::kResultOk;
+}
+
+Steinberg::tresult PLUGIN_API BronzaPlugView::onMouseUp(Steinberg::int32 x, Steinberg::int32 y) {
+    lastMouseX = x;
+    lastMouseY = y;
+    renderer->onMouseUp(x, y);
+    needsRepaint = true;
+    paint();
+    return Steinberg::kResultOk;
+}
+
+Steinberg::tresult PLUGIN_API BronzaPlugView::onMouseMove(Steinberg::int32 x, Steinberg::int32 y) {
+    if (x != lastMouseX || y != lastMouseY) {
+        lastMouseX = x;
+        lastMouseY = y;
+        renderer->onMouseMove(x, y);
+        needsRepaint = true;
+        paint();
+    }
+    return Steinberg::kResultOk;
+}
+
 Steinberg::tresult PLUGIN_API BronzaPlugView::getSize(Steinberg::ViewRect* rect) {
     if (rect) {
         rect->left = 0;
@@ -207,9 +242,8 @@ Steinberg::tresult PLUGIN_API BronzaPlugView::canResize() {
 
 Steinberg::tresult PLUGIN_API BronzaPlugView::checkSizeConstraint(Steinberg::ViewRect* rect) {
     if (rect) {
-        // Минимальный размер 400x300
         int minWidth = 400;
-        int minHeight = 300;
+        int minHeight = 200;
         int newWidth = rect->right - rect->left;
         int newHeight = rect->bottom - rect->top;
         

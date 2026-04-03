@@ -33,6 +33,11 @@ public:
     Steinberg::uint32 PLUGIN_API addRef() override;
     Steinberg::uint32 PLUGIN_API release() override;
     
+    // Mouse handlers
+    Steinberg::tresult PLUGIN_API onMouseDown(Steinberg::int32 x, Steinberg::int32 y) override;
+    Steinberg::tresult PLUGIN_API onMouseUp(Steinberg::int32 x, Steinberg::int32 y) override;
+    Steinberg::tresult PLUGIN_API onMouseMove(Steinberg::int32 x, Steinberg::int32 y) override;
+    
 private:
     void paint();
     
@@ -41,7 +46,7 @@ private:
     Steinberg::IPlugFrame* plugFrame = nullptr;
     Steinberg::uint32 refCount = 1;
     int width = 800;
-    int height = 600;
+    int height = 300;
     
     // X11 ресурсы
     Display* xDisplay = nullptr;
@@ -53,4 +58,8 @@ private:
     
     std::chrono::steady_clock::time_point lastFrameTime;
     bool needsRepaint = true;
+    
+    // Для обработки мыши
+    int lastMouseX = 0;
+    int lastMouseY = 0;
 };

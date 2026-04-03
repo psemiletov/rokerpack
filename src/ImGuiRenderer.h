@@ -1,14 +1,15 @@
 #pragma once
 
-#include "imgui.h"
-#include <memory>
+#include <vector>
 #include <functional>
 #include <atomic>
-#include <vector>
+#include <memory>
+
+class UIWidgets;
 
 class ImGuiRenderer {
 public:
-    ImGuiRenderer(int width = 800, int height = 600);
+    ImGuiRenderer(int width = 800, int height = 300);
     ~ImGuiRenderer();
     
     const std::vector<uint8_t>& getPixelBuffer() const { return pixels; }
@@ -20,13 +21,11 @@ public:
     void endFrame();
     void render();
     
-    // Для получения пикселей для отрисовки
     const unsigned char* getPixels() const { return pixels.data(); }
     int getWidth() const { return width; }
     int getHeight() const { return height; }
-    int getStride() const { return width * 4; } // RGBA
+    int getStride() const { return width * 4; }
     
-    // Callbacks для обновления параметров
     void setParameterCallback(std::function<void(int, float)> callback) {
         paramCallback = callback;
     }
@@ -37,17 +36,19 @@ public:
     
     bool isInitialized() const { return initialized; }
     
+    // Обработчики мыши
+    void onMouseMove(int x, int y);
+    void onMouseDown(int x, int y);
+    void onMouseUp(int x, int y);
+    
 private:
-    void drawUI();
     void renderDrawData();
     
     int width, height;
     std::atomic<bool> initialized = false;
-    
-    // Пиксели для отрисовки (RGBA)
     std::vector<unsigned char> pixels;
+    std::unique_ptr<UIWidgets> ui;
     
-    // Параметры UI
     float levelSlider = 0.6f;
     float fuzzSlider = 0.87f;
     

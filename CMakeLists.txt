@@ -28,21 +28,11 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
-# ============================================================================
-# Dear ImGui - только для UI, без GLFW/OpenGL зависимостей
-# ============================================================================
-FetchContent_Declare(
-    imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.89.9
-    GIT_SHALLOW TRUE
-)
-
 set(ENV{SMTG_ENABLE_VST3_PLUGIN_EXAMPLES} "OFF")
 set(ENV{SMTG_ENABLE_VST3_HOSTING_EXAMPLES} "OFF")
 set(ENV{SMTG_ENABLE_VSTGUI_SUPPORT} "OFF")
 
-FetchContent_MakeAvailable(vst3sdk imgui)
+FetchContent_MakeAvailable(vst3sdk)
 
 if(TARGET vstgui AND NOT TARGET vstgui::vstgui)
     add_library(vstgui::vstgui ALIAS vstgui)
@@ -65,6 +55,7 @@ set(BRONZA_SOURCES
     src/BronzaController.cpp
     src/BronzaPlugView.cpp
     src/ImGuiRenderer.cpp
+    src/UIWidgets.cpp
     src/dsp.cpp
     src/fx-resofilter.cpp
     src/vst3_entry.cpp
@@ -75,20 +66,12 @@ set(BRONZA_HEADERS
     src/BronzaController.h
     src/BronzaPlugView.h
     src/ImGuiRenderer.h
+    src/UIWidgets.h
     src/dsp.h
     src/fx-resofilter.h
 )
 
-# Dear ImGui источники (только ядро, без бэкендов)
-set(IMGUI_SOURCES
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_demo.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-)
-
-add_library(Bronza SHARED ${BRONZA_SOURCES} ${BRONZA_HEADERS} ${IMGUI_SOURCES})
+add_library(Bronza SHARED ${BRONZA_SOURCES} ${BRONZA_HEADERS})
 
 set_target_properties(Bronza PROPERTIES
     PREFIX ""
@@ -103,7 +86,6 @@ target_include_directories(Bronza PRIVATE
     ${vst3sdk_SOURCE_DIR}/public.sdk/source/main
     ${vst3sdk_SOURCE_DIR}/public.sdk/source/vst
     ${vst3sdk_SOURCE_DIR}/public.sdk/source/common
-    ${imgui_SOURCE_DIR}
     ${X11_INCLUDE_DIR}
 )
 
@@ -131,7 +113,8 @@ install(TARGETS Bronza
 
 message(STATUS "========================================")
 message(STATUS "Bronza VST3 Plugin Configuration:")
-message(STATUS "  - ImGui GUI: ENABLED")
+message(STATUS "  - Custom UI: ENABLED")
 message(STATUS "  - Backend: X11 (Linux)")
 message(STATUS "  - Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  - Parameters: Level, Fuzz")
 message(STATUS "========================================")
