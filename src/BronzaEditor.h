@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "BronzaProcessor.h"
+#include "BronzaLookAndFeel.h"  // Добавляем
 
 class BronzaAudioEditor : public juce::AudioProcessorEditor, private juce::Slider::Listener
 {
@@ -17,11 +18,15 @@ private:
 
     BronzaAudioProcessor& audioProcessor;
     
+    // Наши слайдеры
     juce::Slider levelSlider;
     juce::Slider intensitySlider;
     
     juce::Label levelLabel;
     juce::Label intensityLabel;
+    
+    // Кастомный LookAndFeel (должен жить дольше, чем слайдеры)
+    BronzaLookAndFeel bronzaLookAndFeel;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BronzaAudioEditor)
 };

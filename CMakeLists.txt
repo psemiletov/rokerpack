@@ -39,6 +39,7 @@ juce_generate_juce_header(Bronza)
 
 # Добавляем исходники
 target_sources(Bronza PRIVATE
+  src/BronzaLookAndFeel.cpp
   src/BronzaProcessor.cpp
   src/BronzaEditor.cpp
   src/dsp.cpp
