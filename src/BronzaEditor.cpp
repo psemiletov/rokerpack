@@ -7,7 +7,7 @@ BronzaAudioEditor::BronzaAudioEditor (BronzaAudioProcessor& p)
     
     // === Настройка слайдера Level ===
     levelSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);  // Увеличен текстбокс
+    levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
     levelSlider.setRange (0.0f, 1.0f, 0.001f);
     levelSlider.setValue (audioProcessor.getLevelParam()->get(), juce::dontSendNotification);
     levelSlider.addListener (this);
@@ -17,27 +17,27 @@ BronzaAudioEditor::BronzaAudioEditor (BronzaAudioProcessor& p)
     
     // === Настройка слайдера Intensity ===
     intensitySlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    intensitySlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);  // Увеличен текстбокс
+    intensitySlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
     intensitySlider.setRange (0.0f, 1.0f, 0.001f);
     intensitySlider.setValue (audioProcessor.getIntensityParam()->get(), juce::dontSendNotification);
     intensitySlider.addListener (this);
     intensitySlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
     addAndMakeVisible (intensitySlider);
     
-    // === Настройка меток (увеличенный шрифт) ===
+    // === Настройка меток ===
     levelLabel.setText ("LEVEL", juce::dontSendNotification);
     levelLabel.setJustificationType (juce::Justification::centred);
-    levelLabel.setFont (juce::Font (16.0f, juce::Font::bold));  // Увеличен шрифт
+    levelLabel.setFont (juce::Font (16.0f, juce::Font::bold));
     levelLabel.attachToComponent (&levelSlider, false);
     addAndMakeVisible (levelLabel);
     
     intensityLabel.setText ("INTENSITY", juce::dontSendNotification);
     intensityLabel.setJustificationType (juce::Justification::centred);
-    intensityLabel.setFont (juce::Font (16.0f, juce::Font::bold));  // Увеличен шрифт
+    intensityLabel.setFont (juce::Font (16.0f, juce::Font::bold));
     intensityLabel.attachToComponent (&intensitySlider, false);
     addAndMakeVisible (intensityLabel);
     
-    setSize (400, 370);  // Немного увеличили окно
+    setSize (400, 370);
 }
 
 BronzaAudioEditor::~BronzaAudioEditor()
@@ -49,32 +49,32 @@ void BronzaAudioEditor::paint (juce::Graphics& g)
 {
     auto bounds = getLocalBounds();
     
-    // Основной градиент с цветом #472B15
+    // Затемнённый бронзовый градиент для фона
     juce::ColourGradient mainGradient (
-        juce::Colour (0xFF472B15),  // Основной цвет
+        juce::Colour (0xFF6B3A1A),  // Светлая часть (теперь темнее)
         (float)bounds.getX(), (float)bounds.getY(),
-        juce::Colour (0xFF2A180A),  // Темнее
+        juce::Colour (0xFF3A1A08),  // Тёмная часть (значительно темнее)
         (float)bounds.getX(), (float)bounds.getBottom(),
         false
     );
     g.setGradientFill (mainGradient);
     g.fillAll();
     
-    // Металлический блик
+    // Металлический блик (оставляем для объёма)
     juce::ColourGradient shineGradient (
-        juce::Colour (0x33CD7F32),
-        (float)bounds.getX(), (float)bounds.getY() + bounds.getHeight() * 0.2f,
-        juce::Colour (0x00CD7F32),
-        (float)bounds.getX(), (float)bounds.getY() + bounds.getHeight() * 0.5f,
+        juce::Colour (0x33D4A84C),
+        (float)bounds.getX(), (float)bounds.getY() + bounds.getHeight() * 0.15f,
+        juce::Colour (0x00D4A84C),
+        (float)bounds.getX(), (float)bounds.getY() + bounds.getHeight() * 0.4f,
         false
     );
     g.setGradientFill (shineGradient);
     g.fillAll();
     
     // Рамка
-    g.setColour (juce::Colour (0xFFCD7F32));
+    g.setColour (juce::Colour (0xFFC9A03D));
     g.drawRect (bounds, 2.0f);
-    g.setColour (juce::Colour (0xFFE8A95B).withAlpha (0.3f));
+    g.setColour (juce::Colour (0xFFE8C66A).withAlpha (0.3f));
     g.drawRect (bounds.reduced (2), 1.0f);
     
     // Название плагина
@@ -92,7 +92,7 @@ void BronzaAudioEditor::paint (juce::Graphics& g)
                      1);
     
     // Основной текст
-    g.setColour (juce::Colour (0xFFF4C77A));
+    g.setColour (juce::Colour (0xFFF5D97A));
     g.drawFittedText ("BRONZA", 
                      titleArea.getX(), 
                      titleArea.getY(),
@@ -102,21 +102,8 @@ void BronzaAudioEditor::paint (juce::Graphics& g)
                      1);
     
     // Декоративная линия
-    g.setColour (juce::Colour (0xFFCD7F32).withAlpha (0.5f));
+    g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.6f));
     g.drawLine (50.0f, 62.0f, (float)bounds.getWidth() - 50, 62.0f, 1.5f);
-    
-    // Бронзовый индикатор
-    juce::ColourGradient ledGradient (
-        juce::Colour (0xFFF4C77A),
-        (float)bounds.getRight() - 20, (float)bounds.getBottom() - 20,
-        juce::Colour (0xFF8B5A2B),
-        (float)bounds.getRight() - 16, (float)bounds.getBottom() - 16,
-        true
-    );
-    g.setGradientFill (ledGradient);
-    g.fillEllipse ((float)bounds.getRight() - 20, (float)bounds.getBottom() - 20, 10.0f, 10.0f);
-    g.setColour (juce::Colours::white.withAlpha (0.4f));
-    g.fillEllipse ((float)bounds.getRight() - 18, (float)bounds.getBottom() - 18, 3.0f, 3.0f);
 }
 
 void BronzaAudioEditor::resized()

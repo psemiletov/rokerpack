@@ -16,10 +16,14 @@ public:
                           juce::Slider& slider) override;
 
 private:
-    // Бронзовая цветовая палитра (основной цвет #472B15)
-    juce::Colour bronzeDark;      // Тёмная бронза (фон)
-    juce::Colour bronzeMain;      // Основная бронза #472B15
-    juce::Colour bronzeLight;     // Светлая бронза
-    juce::Colour bronzeHighlight; // Яркий бронзовый блик
-    juce::Colour textLight;       // Светлый текст
+    // Цвета для фона и акцентов
+    juce::Colour bgDark;
+    juce::Colour bgLight;
+    juce::Colour textLight;
+    
+    // Латунные цвета для кнобов
+    juce::Colour brassDark;
+    juce::Colour brassMid;
+    juce::Colour brassLight;
+    juce::Colour brassHighlight;
 };
