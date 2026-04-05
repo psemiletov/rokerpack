@@ -2,7 +2,7 @@
 
 #include <JuceHeader.h>
 #include "dsp.h"
-#include "fx-resofilter.h"
+#include "SimpleFilter.h"  // Новый файл
 
 class GrelkaAudioProcessor : public juce::AudioProcessor
 {
@@ -32,15 +32,15 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    // AudioProcessorValueTreeState - ЭТО РЕШЕНИЕ
     juce::AudioProcessorValueTreeState apvts;
 
 private:
     float sampleRate = 44100.0f;
     bool dBTableInitialized = false;
 
-    CResoFilter lp[2];
-    CResoFilter hp[2];
+    // Новые простые фильтры
+    SimpleLPF lp[2];
+    SimpleHPF hp[2];
 
     void updateParameters();
     

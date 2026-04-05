@@ -8,7 +8,8 @@ GrelkaAudioProcessor::GrelkaAudioProcessor()
            std::make_unique<juce::AudioParameterFloat> ("drive", "Drive", 0.01f, 1.0f, 0.16f),
            std::make_unique<juce::AudioParameterFloat> ("level", "Level", -16.0f, 32.0f, 16.0f),
            std::make_unique<juce::AudioParameterFloat> ("lows", "Lows", 40.0f, 1000.0f, 200.0f),
-           std::make_unique<juce::AudioParameterFloat> ("treble", "Treble", 7000.0f, 16500.0f, 13000.0f)
+  //         std::make_unique<juce::AudioParameterFloat> ("treble", "Treble", 7000.0f, 16500.0f, 13000.0f)
+              std::make_unique<juce::AudioParameterFloat> ("treble", "Treble", 500.0f, 16500.0f, 13000.0f)
        })
 {
 }
@@ -29,8 +30,8 @@ void GrelkaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
     
     for (int i = 0; i < 2; ++i)
     {
-        lp[i].mode = FILTER_MODE_LOWPASS;
-        hp[i].mode = FILTER_MODE_HIGHPASS;
+        lp[i].setSampleRate(sampleRate);
+        hp[i].setSampleRate(sampleRate);
         lp[i].reset();
         hp[i].reset();
     }
@@ -49,23 +50,13 @@ void GrelkaAudioProcessor::releaseResources()
 
 void GrelkaAudioProcessor::updateParameters()
 {
-    if (sampleRate < 1.0f) return;
-    
-    float driveValue = apvts.getRawParameterValue("drive")->load();
-    float levelValue = apvts.getRawParameterValue("level")->load();
     float lowsValue = apvts.getRawParameterValue("lows")->load();
     float trebleValue = apvts.getRawParameterValue("treble")->load();
     
-    float cutoffLp = trebleValue / sampleRate;
-    float cutoffHp = lowsValue / sampleRate;
-    
-    cutoffLp = juce::jlimit(0.01f, 0.98f, cutoffLp);
-    cutoffHp = juce::jlimit(0.01f, 0.98f, cutoffHp);
-    
     for (int i = 0; i < 2; ++i)
     {
-        lp[i].set_cutoff(cutoffLp);
-        hp[i].set_cutoff(cutoffHp);
+        lp[i].setCutoff(trebleValue);
+        hp[i].setCutoff(lowsValue);
     }
 }
 
@@ -75,6 +66,10 @@ void GrelkaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     
     float driveValue = apvts.getRawParameterValue("drive")->load();
     float levelValue = apvts.getRawParameterValue("level")->load();
+    
+    // Обновляем фильтры перед обработкой
+    updateParameters();
+    
     float levelLin = db2lin(levelValue);
     
     int numChannels = juce::jmin(2, buffer.getNumChannels());
@@ -83,8 +78,8 @@ void GrelkaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     for (int channel = 0; channel < numChannels; ++channel)
     {
         float* channelData = buffer.getWritePointer(channel);
-        CResoFilter& lpFilter = lp[channel];
-        CResoFilter& hpFilter = hp[channel];
+        SimpleLPF& lpFilter = lp[channel];
+        SimpleHPF& hpFilter = hp[channel];
         
         for (int i = 0; i < numSamples; ++i)
         {

@@ -28,7 +28,8 @@ GrelkaAudioEditor::GrelkaAudioEditor (GrelkaAudioProcessor& p)
     // Treble
     trebleSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
     trebleSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    trebleSlider.setRange (7000.0f, 16500.0f, 10.0f);
+    //trebleSlider.setRange (7000.0f, 16500.0f, 10.0f);
+    trebleSlider.setRange (500.0f, 16500.0f, 10.0f);
     trebleSlider.setTextValueSuffix (" Hz");
     addAndMakeVisible (trebleSlider);
     
