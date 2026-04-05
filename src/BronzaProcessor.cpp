@@ -12,7 +12,7 @@ BronzaAudioProcessor::BronzaAudioProcessor()
                                                  fLevel);
     
     intensityParam = new juce::AudioParameterFloat ("intensity", "Intensity",
-                                                     juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f),
+                                                     juce::NormalisableRange<float> (0.001f, 1.0f, 0.001f),
                                                      fIntensity);
     
     addParameter (levelParam);

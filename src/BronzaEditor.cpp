@@ -18,7 +18,7 @@ BronzaAudioEditor::BronzaAudioEditor (BronzaAudioProcessor& p)
     // === Настройка слайдера Intensity ===
     intensitySlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
     intensitySlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    intensitySlider.setRange (0.0f, 1.0f, 0.001f);
+    intensitySlider.setRange (0.001f, 1.0f, 0.001f);
     intensitySlider.setValue (audioProcessor.getIntensityParam()->get(), juce::dontSendNotification);
     intensitySlider.addListener (this);
     intensitySlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
