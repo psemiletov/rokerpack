@@ -1,48 +1,62 @@
 #pragma once
 
-#include "public.sdk/source/vst/vstaudioeffect.h"
-#include "pluginterfaces/vst/ivsteditcontroller.h"
+#include <JuceHeader.h>
 #include "dsp.h"
 #include "fx-resofilter.h"
 
-class BronzaProcessor : public Steinberg::Vst::AudioEffect
+class BronzaAudioProcessor : public juce::AudioProcessor
 {
 public:
-    BronzaProcessor();
-    ~BronzaProcessor() = default;
-    
-    static Steinberg::FUnknown* createInstance (void* context) {
-        return static_cast<Steinberg::Vst::IAudioProcessor*>(new BronzaProcessor);
-    }
+    BronzaAudioProcessor();
+    ~BronzaAudioProcessor() override;
 
-    Steinberg::tresult PLUGIN_API initialize (Steinberg::FUnknown* context) override;
-    Steinberg::tresult PLUGIN_API terminate () override;
-    Steinberg::tresult PLUGIN_API setupProcessing (Steinberg::Vst::ProcessSetup& setup) override;
-    Steinberg::tresult PLUGIN_API process (Steinberg::Vst::ProcessData& data) override;
-    Steinberg::tresult PLUGIN_API setActive (Steinberg::TBool state) override;
+    // Основные аудио-методы
+    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void releaseResources() override;
+    void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
     
-    Steinberg::tresult PLUGIN_API setState (Steinberg::IBStream* state) override {
-        return Steinberg::kResultOk;
-    }
-    
-    Steinberg::tresult PLUGIN_API getState (Steinberg::IBStream* state) override {
-        return Steinberg::kResultOk;
-    }
+    // Добавляем перегрузку для double (чтобы убрать предупреждение)
+    void processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages) override;
 
-    OBJ_METHODS(BronzaProcessor, Steinberg::Vst::AudioEffect)
-    DEFINE_INTERFACES
-        DEF_INTERFACE(Steinberg::Vst::IAudioProcessor)
-        DEF_INTERFACE(Steinberg::Vst::IComponent)
-    END_DEFINE_INTERFACES(Steinberg::Vst::AudioEffect)
-    DELEGATE_REFCOUNT(Steinberg::Vst::AudioEffect)
+    // GUI
+    juce::AudioProcessorEditor* createEditor() override;
+    bool hasEditor() const override;
 
-protected:
-    // Фильтры для каждого канала (левый и правый)
-    CResoFilter lp[2];
-    CResoFilter hp[2];
-    
-    // Параметры
-    float fLevel = 0.0f;      // Нормализованное значение 0..1
-    float fIntensity = 0.0f;  // Нормализованное значение 0..1
+    // Метаданные плагина
+    const juce::String getName() const override;
+    bool acceptsMidi() const override;
+    bool producesMidi() const override;
+    double getTailLengthSeconds() const override;
+
+    // Программы
+    int getNumPrograms() override;
+    int getCurrentProgram() override;
+    void setCurrentProgram (int index) override;
+    const juce::String getProgramName (int index) override;
+    void changeProgramName (int index, const juce::String& newName) override;
+
+    // State management
+    void getStateInformation (juce::MemoryBlock& destData) override;
+    void setStateInformation (const void* data, int sizeInBytes) override;
+
+    // Геттеры для GUI
+    juce::AudioParameterFloat* getLevelParam() const { return levelParam; }
+    juce::AudioParameterFloat* getIntensityParam() const { return intensityParam; }
+
+private:
+    // Аудио параметры
+    juce::AudioParameterFloat* levelParam;
+    juce::AudioParameterFloat* intensityParam;
+
+    // Добавленные переменные-члены (были только в .cpp)
+    float fLevel = 29.0f / 48.0f;    // Значение по умолчанию 0.604
+    float fIntensity = 0.87f;         // Значение по умолчанию
     float sampleRate = 44100.0f;
+    bool dBTableInitialized = false;
+
+    // Исправление: обычные объекты, а не unique_ptr
+    CResoFilter lp[2];  // Левый и правый Low-pass
+    CResoFilter hp[2];  // Левый и правый High-pass
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BronzaAudioProcessor)
 };

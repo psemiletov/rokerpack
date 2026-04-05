@@ -1,137 +1,61 @@
-cmake_minimum_required(VERSION 3.21)
-project(Bronza VERSION 1.0.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.22)
+project(Bronza VERSION 1.0.0)
+
+cmake_policy(SET CMP0135 NEW)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
+# Подтягиваем JUCE через FetchContent
+set(JUCETAG "7.0.12")
 include(FetchContent)
 
-# ============================================================================
-# ОФИЦИАЛЬНЫЕ ОПЦИИ SDK
-# ============================================================================
-set(SMTG_ENABLE_VST3_PLUGIN_EXAMPLES OFF CACHE BOOL "Disable VST3 plugin examples" FORCE)
-set(SMTG_ENABLE_VST3_HOSTING_EXAMPLES OFF CACHE BOOL "Disable VST3 hosting examples" FORCE)
-set(SMTG_ENABLE_VSTGUI_SUPPORT OFF CACHE BOOL "Disable VSTGUI support" FORCE)
-
-set(SMTG_BUILD_VST3_TESTS OFF CACHE BOOL "" FORCE)
-set(SMTG_BUILD_VSTGUI OFF CACHE BOOL "" FORCE)
-set(SMTG_BUILD_AAX_WRAPPER OFF CACHE BOOL "" FORCE)
-
 FetchContent_Declare(
-    vst3sdk
-    GIT_REPOSITORY https://github.com/steinbergmedia/vst3sdk.git
-    GIT_TAG v3.7.11_build_10
-    GIT_SHALLOW TRUE
+  juce
+  URL https://github.com/juce-framework/JUCE/archive/refs/tags/${JUCETAG}.tar.gz
+  EXCLUDE_FROM_ALL
 )
 
-# ============================================================================
-# Dear ImGui - только для UI, без GLFW/OpenGL зависимостей
-# ============================================================================
-FetchContent_Declare(
-    imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.89.9
-    GIT_SHALLOW TRUE
+FetchContent_MakeAvailable(juce)
+
+# Создаём плагин
+juce_add_plugin(Bronza
+  VERSION 1.0.0
+  COMPANY_NAME "Semiletov"
+  PRODUCT_NAME "Bronza"
+  PLUGIN_MANUFACTURER_CODE Semi
+  PLUGIN_CODE Brnz
+  FORMATS VST3
+  VST3_CATEGORIES Fx
+  IS_SYNTH FALSE
+  NEEDS_MIDI_INPUT FALSE
+  NEEDS_MIDI_OUTPUT FALSE
+  COPY_PLUGIN_AFTER_BUILD FALSE
 )
 
-set(ENV{SMTG_ENABLE_VST3_PLUGIN_EXAMPLES} "OFF")
-set(ENV{SMTG_ENABLE_VST3_HOSTING_EXAMPLES} "OFF")
-set(ENV{SMTG_ENABLE_VSTGUI_SUPPORT} "OFF")
+# Генерируем JuceHeader.h
+juce_generate_juce_header(Bronza)
 
-FetchContent_MakeAvailable(vst3sdk imgui)
-
-if(TARGET vstgui AND NOT TARGET vstgui::vstgui)
-    add_library(vstgui::vstgui ALIAS vstgui)
-endif()
-
-add_compile_definitions(
-    VSTGUI_NOT_SUPPORTED
-    SMTG_DISABLE_VSTGUI_SUPPORT
+# Добавляем исходники
+target_sources(Bronza PRIVATE
+  src/BronzaProcessor.cpp
+  src/BronzaEditor.cpp
+  src/dsp.cpp
+  src/fx-resofilter.cpp
 )
 
-# Поиск X11 для Linux
-find_package(X11 REQUIRED)
-
-# ============================================================================
-# Плагин
-# ============================================================================
-set(BRONZA_SOURCES
-    src/factory.cpp
-    src/BronzaProcessor.cpp
-    src/BronzaController.cpp
-    src/BronzaPlugView.cpp
-    src/ImGuiRenderer.cpp
-    src/dsp.cpp
-    src/fx-resofilter.cpp
-    src/vst3_entry.cpp
-)
-
-set(BRONZA_HEADERS
-    src/BronzaProcessor.h
-    src/BronzaController.h
-    src/BronzaPlugView.h
-    src/ImGuiRenderer.h
-    src/dsp.h
-    src/fx-resofilter.h
-)
-
-# Dear ImGui источники (только ядро, без бэкендов)
-set(IMGUI_SOURCES
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_demo.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-)
-
-add_library(Bronza SHARED ${BRONZA_SOURCES} ${BRONZA_HEADERS} ${IMGUI_SOURCES})
-
-set_target_properties(Bronza PROPERTIES
-    PREFIX ""
-    SUFFIX ".vst3"
-    CXX_VISIBILITY_PRESET default
-    VISIBILITY_INLINES_HIDDEN OFF
-)
-
-target_include_directories(Bronza PRIVATE 
-    src
-    ${vst3sdk_SOURCE_DIR}
-    ${vst3sdk_SOURCE_DIR}/public.sdk/source/main
-    ${vst3sdk_SOURCE_DIR}/public.sdk/source/vst
-    ${vst3sdk_SOURCE_DIR}/public.sdk/source/common
-    ${imgui_SOURCE_DIR}
-    ${X11_INCLUDE_DIR}
-)
-
-target_link_libraries(Bronza PRIVATE 
-    pluginterfaces
-    base
-    sdk
-    ${X11_LIBRARIES}
-)
-
-if(LINUX)
-    target_link_libraries(Bronza PRIVATE pthread dl)
-    target_compile_options(Bronza PRIVATE -fPIC -fvisibility=default)
-endif()
-
+# Настройки компиляции
 target_compile_definitions(Bronza PRIVATE
-    BUILDING_VST3_PLUGIN
-    SMTG_OS_LINUX
+  JUCE_JACK=0
+  JUCE_WEB_BROWSER=0
+  JUCE_USE_CURL=0
+  JUCE_VST3_CAN_REPLACE_VST2=0
 )
 
-install(TARGETS Bronza
-    LIBRARY DESTINATION ~/.vst3
-    RUNTIME DESTINATION ~/.vst3
+# Подключаем библиотеки
+target_link_libraries(Bronza PRIVATE
+  juce::juce_audio_utils
+  juce::juce_recommended_config_flags
+  juce::juce_recommended_lto_flags
+  juce::juce_recommended_warning_flags
 )
-
-message(STATUS "========================================")
-message(STATUS "Bronza VST3 Plugin Configuration:")
-message(STATUS "  - ImGui GUI: ENABLED")
-message(STATUS "  - Backend: X11 (Linux)")
-message(STATUS "  - Build Type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "========================================")
