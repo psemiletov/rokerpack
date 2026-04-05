@@ -7,7 +7,6 @@ public:
     BronzaLookAndFeel();
     ~BronzaLookAndFeel() override;
 
-    // Переопределяем только отрисовку rotary sliders
     void drawRotarySlider (juce::Graphics& g, 
                           int x, int y, 
                           int width, int height,
@@ -16,13 +15,11 @@ public:
                           float rotaryEndAngle,
                           juce::Slider& slider) override;
 
-    // НЕ переопределяем drawLabel (пусть JUCE использует стандартный)
-
 private:
-    // Вспомогательные цвета
-    juce::Colour bodyColour;
-    juce::Colour knobColour;
-    juce::Colour knobOutlineColour;
-    juce::Colour indicatorColour;
-    juce::Colour textColour;
+    // Бронзовая цветовая палитра (основной цвет #472B15)
+    juce::Colour bronzeDark;      // Тёмная бронза (фон)
+    juce::Colour bronzeMain;      // Основная бронза #472B15
+    juce::Colour bronzeLight;     // Светлая бронза
+    juce::Colour bronzeHighlight; // Яркий бронзовый блик
+    juce::Colour textLight;       // Светлый текст
 };
