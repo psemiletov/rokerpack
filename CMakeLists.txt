@@ -97,3 +97,82 @@ target_link_libraries(Grelka PRIVATE
   juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
+
+# ==================== METALLUGA PLUGIN ====================
+juce_add_plugin(Metalluga
+  VERSION 1.0.0
+  COMPANY_NAME "Semiletov"
+  PRODUCT_NAME "Metalluga"
+  PLUGIN_MANUFACTURER_CODE Semi
+  PLUGIN_CODE Mtlg
+  FORMATS VST3
+  VST3_CATEGORIES Fx
+  IS_SYNTH FALSE
+  NEEDS_MIDI_INPUT FALSE
+  NEEDS_MIDI_OUTPUT FALSE
+  COPY_PLUGIN_AFTER_BUILD FALSE
+)
+
+juce_generate_juce_header(Metalluga)
+
+target_sources(Metalluga PRIVATE
+  src/MetallugaProcessor.cpp
+  src/MetallugaEditor.cpp
+  src/BronzaLookAndFeel.cpp
+  src/dsp.cpp
+  src/fx-resofilter.cpp
+)
+
+target_compile_definitions(Metalluga PRIVATE
+  JUCE_JACK=0
+  JUCE_WEB_BROWSER=0
+  JUCE_USE_CURL=0
+  JUCE_VST3_CAN_REPLACE_VST2=0
+  JUCE_DISPLAY_SPLASH_SCREEN=0
+)
+
+target_link_libraries(Metalluga PRIVATE
+  juce::juce_audio_utils
+  juce::juce_recommended_config_flags
+  juce::juce_recommended_lto_flags
+  juce::juce_recommended_warning_flags
+)
+
+# ==================== CHARM PLUGIN ====================
+juce_add_plugin(Charm
+  VERSION 1.0.0
+  COMPANY_NAME "Semiletov"
+  PRODUCT_NAME "Charm"
+  PLUGIN_MANUFACTURER_CODE Semi
+  PLUGIN_CODE Chrm
+  FORMATS VST3
+  VST3_CATEGORIES Fx
+  IS_SYNTH FALSE
+  NEEDS_MIDI_INPUT FALSE
+  NEEDS_MIDI_OUTPUT FALSE
+  COPY_PLUGIN_AFTER_BUILD FALSE
+)
+
+juce_generate_juce_header(Charm)
+
+target_sources(Charm PRIVATE
+  src/CharmProcessor.cpp
+  src/CharmEditor.cpp
+  src/BronzaLookAndFeel.cpp
+  src/dsp.cpp
+)
+
+target_compile_definitions(Charm PRIVATE
+  JUCE_JACK=0
+  JUCE_WEB_BROWSER=0
+  JUCE_USE_CURL=0
+  JUCE_VST3_CAN_REPLACE_VST2=0
+  JUCE_DISPLAY_SPLASH_SCREEN=0
+)
+
+target_link_libraries(Charm PRIVATE
+  juce::juce_audio_utils
+  juce::juce_recommended_config_flags
+  juce::juce_recommended_lto_flags
+  juce::juce_recommended_warning_flags
+)
