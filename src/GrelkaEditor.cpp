@@ -109,7 +109,7 @@ void GrelkaAudioEditor::paint (juce::Graphics& g)
     
     g.setColour (juce::Colours::black.withAlpha (0.6f));
     g.setFont (juce::Font (34.0f, juce::Font::bold));
-    g.drawFittedText ("GREKLA", 
+    g.drawFittedText ("GRELKA", 
                      titleArea.getX() + 2, 
                      titleArea.getY() + 2,
                      titleArea.getWidth(),
@@ -118,7 +118,7 @@ void GrelkaAudioEditor::paint (juce::Graphics& g)
                      1);
     
     g.setColour (juce::Colour (0xFFF5D97A));
-    g.drawFittedText ("GREKLA", 
+    g.drawFittedText ("GRELKA", 
                      titleArea.getX(), 
                      titleArea.getY(),
                      titleArea.getWidth(),

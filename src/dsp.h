@@ -100,128 +100,12 @@ public:
     float midCoeff = 1.0f;
     float highCoeff = 1.0f;
 };
-/*
-int main() {
-    BaxandallEqualizer eq;
-
-    // Изменение частоты дискретизации перед первым вызовом process
-    eq.setSampleRate(48000.0f);
-
-    // Установка уровней усиления
-    eq.setLowGain(6.0f);   // Усиление низких частот на +6 дБ
-    eq.setMidGain(-6.0f);  // Ослабление средних частот на -6 дБ
-    eq.setHighGain(3.0f);  // Усиление высоких частот на +3 дБ
-
-    // Пример использования эквалайзера
-    float inputSignal = 0.5f; // Входной сигнал
-    float outputSignal = eq.process(inputSignal);
-
-    return 0;
-}
-*/
-
-/*
-class BaxandallEqualizer {
-public:
-    float lowGain;   // Уровень нижней полосы (-90 до +6 dB)
-    float midGain;   // Уровень средней полосы (-90 до +6 dB)
-    float highGain;  // Уровень верхней полосы (-90 до +6 dB)
-    float lowFrequency;  // Частота нижней полосы (Гц)
-    float highFrequency; // Частота верхней полосы (Гц)
-
-    BaxandallEqualizer() : lowGain(0), midGain(0), highGain(0), lowFrequency(100), highFrequency(20000) {
-    }
-
-    void setSampleRate(float newSampleRate) {
-        sampleRate = newSampleRate;
-    }
-
-    float process(float inputSample) {
-        // Расчет коэффициентов для фильтрации
-        float lowGainLinear = pow(10.0f, lowGain / 20.0f);
-        float midGainLinear = pow(10.0f, midGain / 20.0f);
-        float highGainLinear = pow(10.0f, highGain / 20.0f);
-
-        float lowCoeff = calculateCoeff(lowFrequency);
-        float midCoeff = calculateCoeff((lowFrequency + highFrequency) / 2.0f);
-        float highCoeff = calculateCoeff(highFrequency);
-
-        // Применение эквалайзера
-        float lowFiltered = lowCoeff * lowGainLinear * inputSample;
-        float midFiltered = midCoeff * midGainLinear * inputSample;
-        float highFiltered = highCoeff * highGainLinear * inputSample;
-
-        // Выходное значение - комбинация трех полос
-        return lowFiltered + midFiltered + highFiltered;
-    }
-
-private:
-    float calculateCoeff(float frequency) {
-        float omega = 2.0f * M_PI * frequency / sampleRate;
-        return (omega / (omega + 1.0f));
-    }
-
-    float sampleRate = 44100.0f; // Начальное значение частоты дискретизации
-};
-
-
-*/
-
-/*
-class BaxandallEqualizer {
-public:
-    float lowGain;   // Уровень нижней полосы (-90 до +6 dB)
-    float midGain;   // Уровень средней полосы (-90 до +6 dB)
-    float highGain;  // Уровень верхней полосы (-90 до +6 dB)
-    float lowFrequency;  // Частота нижней полосы (Гц)
-    float highFrequency; // Частота верхней полосы (Гц)
-
-    BaxandallEqualizer() : lowGain(0), midGain(0), highGain(0), lowFrequency(100), highFrequency(10000) {
-    }
-
-    float process(float inputSample, float sampleRate) {
-        // Расчет коэффициентов для нижней, средней и верхней полос эквалайзера
-        float lowGainLinear = pow(10.0f, lowGain / 20.0f);
-        float midGainLinear = pow(10.0f, midGain / 20.0f);
-        float highGainLinear = pow(10.0f, highGain / 20.0f);
-
-        float lowOmega = 2.0f * M_PI * lowFrequency / sampleRate;
-        float midOmega = 2.0f * M_PI * (lowFrequency + highFrequency) / (2 * sampleRate);
-        float highOmega = 2.0f * M_PI * highFrequency / sampleRate;
-
-        // Расчет коэффициентов для фильтрации
-        float lowCoeff = lowGainLinear / (1.0f + lowGainLinear);
-        float midCoeff = midGainLinear / (1.0f + midGainLinear);
-        float highCoeff = highGainLinear / (1.0f + highGainLinear);
-
-        // Применение эквалайзера
-        float lowFiltered = (1.0f - lowCoeff) * inputSample + lowCoeff * lowFilteredState;
-        float midFiltered = (1.0f - midCoeff) * inputSample + midCoeff * midFilteredState;
-        float highFiltered = (1.0f - highCoeff) * inputSample + highCoeff * highFilteredState;
-
-        // Обновление состояний фильтров
-        lowFilteredState = lowFiltered;
-        midFilteredState = midFiltered;
-        highFilteredState = highFiltered;
-
-        // Выходное значение - комбинация трех полос
-        return lowFiltered + midFiltered + highFiltered;
-    }
-
-private:
-    float lowFilteredState = 0.0f;
-    float midFilteredState = 0.0f;
-    float highFilteredState = 0.0f;
-};
-
-*/
-
 
 class Flanger {
  public:
   // Конструктор.
-  Flanger(float samplerate) {
-    this->samplerate = samplerate;
+  Flanger(float srt) {
+    samplerate = srt;
     delay = 0.3;
     depth = 0.5;
     rate = 1;
@@ -352,31 +236,10 @@ inline float db2lin (float db)
   return (float) exp (db * db_scale);
 }
 
-/*
-static inline float db2lin (float db)
-{
-  return powf (10.0f, db / 20);
-}
-*/
-
-/*
-inline float float2db (float v)
-{
-  if (v == 0.0f)
-     return 0.0f;
-
-  if (v > 0.0f)
-     return (float) 20 * log10 (v / 1.0f);
-
-  return (float) 20 * log10 (v / -1.0f);
-}
-*/
 
 void init_db();
 
 
-
-///
 
 inline bool float_greater_than (float a, float b)
 {
