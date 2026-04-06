@@ -176,3 +176,42 @@ target_link_libraries(Charm PRIVATE
   juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
+
+# ==================== TEMBR PLUGIN ====================
+juce_add_plugin(Tembr
+  VERSION 1.0.0
+  COMPANY_NAME "Semiletov"
+  PRODUCT_NAME "Tembr"
+  PLUGIN_MANUFACTURER_CODE Semi
+  PLUGIN_CODE Tmbr
+  FORMATS VST3
+  VST3_CATEGORIES Fx
+  IS_SYNTH FALSE
+  NEEDS_MIDI_INPUT FALSE
+  NEEDS_MIDI_OUTPUT FALSE
+  COPY_PLUGIN_AFTER_BUILD FALSE
+)
+
+juce_generate_juce_header(Tembr)
+
+target_sources(Tembr PRIVATE
+  src/TembrProcessor.cpp
+  src/TembrEditor.cpp
+  src/BronzaLookAndFeel.cpp
+  src/dsp.cpp
+)
+
+target_compile_definitions(Tembr PRIVATE
+  JUCE_JACK=0
+  JUCE_WEB_BROWSER=0
+  JUCE_USE_CURL=0
+  JUCE_VST3_CAN_REPLACE_VST2=0
+  JUCE_DISPLAY_SPLASH_SCREEN=0
+)
+
+target_link_libraries(Tembr PRIVATE
+  juce::juce_audio_utils
+  juce::juce_recommended_config_flags
+  juce::juce_recommended_lto_flags
+  juce::juce_recommended_warning_flags
+)
