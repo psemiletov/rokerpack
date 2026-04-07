@@ -215,3 +215,43 @@ target_link_libraries(Tembr PRIVATE
   juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
+
+
+
+# ==================== MISTRAL PLUGIN ====================
+juce_add_plugin(Mistral
+  VERSION 1.0.0
+  COMPANY_NAME "Semiletov"
+  PRODUCT_NAME "Mistral"
+  PLUGIN_MANUFACTURER_CODE Semi
+  PLUGIN_CODE Mstr
+  FORMATS VST3
+  VST3_CATEGORIES Fx
+  IS_SYNTH FALSE
+  NEEDS_MIDI_INPUT FALSE
+  NEEDS_MIDI_OUTPUT FALSE
+  COPY_PLUGIN_AFTER_BUILD FALSE
+)
+
+juce_generate_juce_header(Mistral)
+
+target_sources(Mistral PRIVATE
+  src/MistralProcessor.cpp
+  src/MistralEditor.cpp
+  src/BronzaLookAndFeel.cpp
+)
+
+target_compile_definitions(Mistral PRIVATE
+  JUCE_JACK=0
+  JUCE_WEB_BROWSER=0
+  JUCE_USE_CURL=0
+  JUCE_VST3_CAN_REPLACE_VST2=0
+  JUCE_DISPLAY_SPLASH_SCREEN=0
+)
+
+target_link_libraries(Mistral PRIVATE
+  juce::juce_audio_utils
+  juce::juce_recommended_config_flags
+  juce::juce_recommended_lto_flags
+  juce::juce_recommended_warning_flags
+)
