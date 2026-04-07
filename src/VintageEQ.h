@@ -60,7 +60,10 @@ private:
     void updateLowCoeffs()
     {
         // Low shelf filter at 100 Hz, Q=0.7
-        float w0 = 2.0f * float(M_PI) * 100.0f / float(sampleRate);
+       // float w0 = 2.0f * float(M_PI) * 100.0f / float(sampleRate);
+       
+        float w0 = 2.0f * float(M_PI) * 120.0f / float(sampleRate);
+        
         float A = pow(10.0f, lowsGain / 40.0f);
         float alpha = sin(w0) / (2.0f * 0.7f);
         float cosw0 = cos(w0);
@@ -82,7 +85,6 @@ private:
     void updateHighCoeffs()
     {
         // High shelf filter at 10 kHz, Q=0.7
-        //float w0 = 2.0f * float(M_PI) * 10000.0f / float(sampleRate);
         float w0 = 2.0f * float(M_PI) * 4000.0f / float(sampleRate);
         
         float A = pow(10.0f, trebleGain / 40.0f);
