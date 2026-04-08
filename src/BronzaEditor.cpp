@@ -51,16 +51,16 @@ void BronzaAudioEditor::paint (juce::Graphics& g)
     
     // Затемнённый бронзовый градиент для фона
     juce::ColourGradient mainGradient (
-        juce::Colour (0xFF6B3A1A),  // Светлая часть (теперь темнее)
+        juce::Colour (0xFF6B3A1A),
         (float)bounds.getX(), (float)bounds.getY(),
-        juce::Colour (0xFF3A1A08),  // Тёмная часть (значительно темнее)
+        juce::Colour (0xFF3A1A08),
         (float)bounds.getX(), (float)bounds.getBottom(),
         false
     );
     g.setGradientFill (mainGradient);
     g.fillAll();
     
-    // Металлический блик (оставляем для объёма)
+    // Металлический блик
     juce::ColourGradient shineGradient (
         juce::Colour (0x33D4A84C),
         (float)bounds.getX(), (float)bounds.getY() + bounds.getHeight() * 0.15f,
@@ -87,7 +87,7 @@ void BronzaAudioEditor::paint (juce::Graphics& g)
                      titleArea.getX() + 2, 
                      titleArea.getY() + 2,
                      titleArea.getWidth(),
-                     55,
+                     50,
                      juce::Justification::centredTop, 
                      1);
     
@@ -97,19 +97,30 @@ void BronzaAudioEditor::paint (juce::Graphics& g)
                      titleArea.getX(), 
                      titleArea.getY(),
                      titleArea.getWidth(),
-                     55,
+                     50,
+                     juce::Justification::centredTop, 
+                     1);
+    
+    // === ПОДПИСЬ (шрифт 14 pt) ===
+    g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.8f));
+    g.setFont (juce::Font (14.0f, juce::Font::italic));
+    g.drawFittedText ("fuzz by Peter Semiletov", 
+                     bounds.getX(), 
+                     titleArea.getY() + 45,
+                     bounds.getWidth(),
+                     20,
                      juce::Justification::centredTop, 
                      1);
     
     // Декоративная линия
     g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.6f));
-    g.drawLine (50.0f, 62.0f, (float)bounds.getWidth() - 50, 62.0f, 1.5f);
+    g.drawLine (50.0f, 70.0f, (float)bounds.getWidth() - 50, 70.0f, 1.5f);
 }
 
 void BronzaAudioEditor::resized()
 {
     auto area = getLocalBounds();
-    auto titleArea = area.removeFromTop (75);
+    auto titleArea = area.removeFromTop (80);
     auto sliderArea = area.reduced (30, 25);
     
     auto leftArea = sliderArea.removeFromLeft (sliderArea.getWidth() / 2);

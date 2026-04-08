@@ -10,7 +10,7 @@ TembrAudioEditor::TembrAudioEditor (TembrAudioProcessor& p)
     lowsSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
     lowsSlider.setRange (-12.0f, 12.0f);  // без шага
     lowsSlider.setTextValueSuffix (" dB");
-   addAndMakeVisible (lowsSlider);
+    addAndMakeVisible (lowsSlider);
     
     // Treble Slider
     trebleSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
@@ -75,35 +75,50 @@ void TembrAudioEditor::paint (juce::Graphics& g)
     g.setColour (juce::Colour (0xFFE8C66A).withAlpha (0.3f));
     g.drawRect (bounds.reduced (2), 1.0f);
     
+    // Название плагина
     juce::Rectangle<int> titleArea (bounds.getX(), bounds.getY(), bounds.getWidth(), 70);
     
+    // Тень
     g.setColour (juce::Colours::black.withAlpha (0.6f));
     g.setFont (juce::Font (34.0f, juce::Font::bold));
     g.drawFittedText ("TEMBR", 
                      titleArea.getX() + 2, 
                      titleArea.getY() + 2,
                      titleArea.getWidth(),
-                     55,
+                     50,
                      juce::Justification::centredTop, 
                      1);
     
+    // Основной текст
     g.setColour (juce::Colour (0xFFF5D97A));
     g.drawFittedText ("TEMBR", 
                      titleArea.getX(), 
                      titleArea.getY(),
                      titleArea.getWidth(),
-                     55,
+                     50,
                      juce::Justification::centredTop, 
                      1);
     
+    // === ПОДПИСЬ ===
+    g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.8f));
+    g.setFont (juce::Font (14.0f, juce::Font::italic));
+    g.drawFittedText ("equalizer by Peter Semiletov", 
+                     bounds.getX(), 
+                     titleArea.getY() + 45,
+                     bounds.getWidth(),
+                     20,
+                     juce::Justification::centredTop, 
+                     1);
+    
+    // Декоративная линия (опущена ниже)
     g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.6f));
-    g.drawLine (50.0f, 62.0f, (float)bounds.getWidth() - 50, 62.0f, 1.5f);
+    g.drawLine (50.0f, 70.0f, (float)bounds.getWidth() - 50, 70.0f, 1.5f);
 }
 
 void TembrAudioEditor::resized()
 {
     auto area = getLocalBounds();
-    auto titleArea = area.removeFromTop (75);
+    auto titleArea = area.removeFromTop (80);
     auto sliderArea = area.reduced (30, 25);
     
     // Два слайдера в ряд

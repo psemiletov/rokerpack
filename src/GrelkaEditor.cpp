@@ -28,12 +28,11 @@ GrelkaAudioEditor::GrelkaAudioEditor (GrelkaAudioProcessor& p)
     // Treble
     trebleSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
     trebleSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    //trebleSlider.setRange (7000.0f, 16500.0f, 10.0f);
     trebleSlider.setRange (500.0f, 16500.0f, 10.0f);
     trebleSlider.setTextValueSuffix (" Hz");
     addAndMakeVisible (trebleSlider);
     
-    // Attachments (связываем слайдеры с параметрами)
+    // Attachments
     driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.apvts, "drive", driveSlider);
     levelAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
@@ -105,35 +104,50 @@ void GrelkaAudioEditor::paint (juce::Graphics& g)
     g.setColour (juce::Colour (0xFFE8C66A).withAlpha (0.3f));
     g.drawRect (bounds.reduced (2), 1.0f);
     
+    // Название плагина
     juce::Rectangle<int> titleArea (bounds.getX(), bounds.getY(), bounds.getWidth(), 70);
     
+    // Тень
     g.setColour (juce::Colours::black.withAlpha (0.6f));
     g.setFont (juce::Font (34.0f, juce::Font::bold));
     g.drawFittedText ("GRELKA", 
                      titleArea.getX() + 2, 
                      titleArea.getY() + 2,
                      titleArea.getWidth(),
-                     55,
+                     50,
                      juce::Justification::centredTop, 
                      1);
     
+    // Основной текст
     g.setColour (juce::Colour (0xFFF5D97A));
     g.drawFittedText ("GRELKA", 
                      titleArea.getX(), 
                      titleArea.getY(),
                      titleArea.getWidth(),
-                     55,
+                     50,
                      juce::Justification::centredTop, 
                      1);
     
+    // === ПОДПИСЬ ===
+    g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.8f));
+    g.setFont (juce::Font (14.0f, juce::Font::italic));
+    g.drawFittedText ("Overdrive by Peter Semiletov", 
+                     bounds.getX(), 
+                     titleArea.getY() + 45,
+                     bounds.getWidth(),
+                     20,
+                     juce::Justification::centredTop, 
+                     1);
+    
+    // Декоративная линия (опущена ниже)
     g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.6f));
-    g.drawLine (50.0f, 62.0f, (float)bounds.getWidth() - 50, 62.0f, 1.5f);
+    g.drawLine (50.0f, 70.0f, (float)bounds.getWidth() - 50, 70.0f, 1.5f);
 }
 
 void GrelkaAudioEditor::resized()
 {
     auto area = getLocalBounds();
-    auto titleArea = area.removeFromTop (75);
+    auto titleArea = area.removeFromTop (80);
     auto sliderArea = area.reduced (20, 25);
     
     int sliderWidth = sliderArea.getWidth() / 4;
