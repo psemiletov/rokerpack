@@ -37,8 +37,6 @@ public:
     juce::String getTargetNote() const { juce::ScopedLock lock (stringDataLock); return targetNote; }
     int getStringNumber() const { return stringNumber; }
     float getCentsDeviation() const { return centsDeviation.load(); }
-    
-    void setManualMode (bool manual, int stringIndex);
 
 private:
     int findClosestString (float frequency) const;
@@ -49,9 +47,6 @@ private:
     
     double currentSampleRate;
     int currentBlockSize;
-    
-    bool manualMode;
-    int selectedString;        // 0 = 6-я, 5 = 1-я
     
     std::atomic<float> detectedFrequency;
     std::atomic<float> targetFrequency;

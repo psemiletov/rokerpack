@@ -30,10 +30,6 @@ void MeterPanel::updateValues (float detectedFrequency,
     currentTargetNote = targetNote;
     currentStringNumber = stringNumber;
     currentCentsDeviation = centsDeviation;
-    
-    // Для отладки
-    std::cout << "updateValues: detectedFreq=" << detectedFrequency 
-              << ", targetNote=" << targetNote << std::endl;
 }
 
 void MeterPanel::timerCallback()
@@ -50,37 +46,37 @@ void MeterPanel::paint (juce::Graphics& g)
     g.fillRect (bounds);
     
     // Разделяем на три зоны
-    auto topArea = bounds.removeFromTop (80);      // Верхняя зона: целевая информация
+    auto topArea = bounds.removeFromTop (85);      // Верхняя зона: целевая информация
     auto middleArea = bounds.removeFromTop (120);  // Средняя зона: шкала
     auto bottomArea = bounds;                       // Нижняя зона: текущая частота
     
-    // === 1. ВЕРХНЯЯ ЗОНА (сверху вниз: String -> Нота -> Частота) ===
+    // === 1. ВЕРХНЯЯ ЗОНА ===
     float yOffset = 5;
     
-    // Строка "String X" (самая верхняя)
+    // Строка "String X" (увеличенный шрифт)
     if (currentStringNumber > 0)
     {
-        g.setFont (juce::Font (11.0f, juce::Font::plain));
-        g.setColour (Colors::brassMid);
-        g.drawText ("String " + juce::String (currentStringNumber), 
+        g.setFont (juce::Font (15.0f, juce::Font::bold));  // Увеличено с 11 до 15
+        g.setColour (Colors::brassLight);
+        g.drawText ("STRING " + juce::String (currentStringNumber), 
                     topArea.getX(), 
                     topArea.getY() + yOffset,
                     topArea.getWidth(),
-                    16,
+                    20,
                     juce::Justification::centred);
-        yOffset += 18;
+        yOffset += 24;
     }
     
     // Название эталонной ноты
     g.setColour (Colors::brassHighlight);
-    g.setFont (juce::Font (26.0f, juce::Font::bold));
+    g.setFont (juce::Font (28.0f, juce::Font::bold));  // Увеличено с 26 до 28
     g.drawText (currentTargetNote, 
                 topArea.getX(), 
                 topArea.getY() + yOffset,
                 topArea.getWidth(),
-                35,
+                38,
                 juce::Justification::centred);
-    yOffset += 38;
+    yOffset += 42;
     
     // Частота эталонной ноты
     g.setColour (Colors::textLight);
@@ -101,7 +97,7 @@ void MeterPanel::paint (juce::Graphics& g)
     
     // Текущая частота (крупно)
     g.setColour (Colors::brassHighlight);
-    g.setFont (juce::Font (32.0f, juce::Font::bold));
+    g.setFont (juce::Font (34.0f, juce::Font::bold));  // Увеличено с 32 до 34
     
     juce::String detectedText;
     if (currentFrequency <= 0.0f)
@@ -113,9 +109,9 @@ void MeterPanel::paint (juce::Graphics& g)
                 bottomArea.getX(), 
                 bottomArea.getY() + yOffset,
                 bottomArea.getWidth(),
-                45,
+                48,
                 juce::Justification::centred);
-    yOffset += 48;
+    yOffset += 52;
     
     // Единица измерения "Hz"
     g.setColour (Colors::textLight);
@@ -126,7 +122,7 @@ void MeterPanel::paint (juce::Graphics& g)
                 bottomArea.getWidth(),
                 20,
                 juce::Justification::centred);
-    yOffset += 22;
+    yOffset += 24;
     
     // Текущая детектированная нота
     g.setFont (juce::Font (18.0f, juce::Font::bold));
@@ -152,6 +148,7 @@ void MeterPanel::drawMeter (juce::Graphics& g, juce::Rectangle<int> area)
     float tickStep = (meterBg.getWidth() - 20) / (numTicks - 1);
     float startX = meterBg.getX() + 10;
     
+    // Рисуем метки шкалы
     for (int i = 0; i < numTicks; ++i)
     {
         float x = startX + i * tickStep;
@@ -172,6 +169,40 @@ void MeterPanel::drawMeter (juce::Graphics& g, juce::Rectangle<int> area)
         }
     }
     
+    // === Подсказки по краям шкалы ===
+    g.setFont (juce::Font (10.0f, juce::Font::bold));
+    
+    // Стрелка влево (затягивать)
+    g.setColour (Colors::brassHighlight);
+    juce::Path leftArrow;
+    leftArrow.addArrow (juce::Line<float> (meterBg.getX() + 15, meterBg.getY() + 12, 
+                                           meterBg.getX() + 5, meterBg.getY() + 12), 3.0f, 6.0f, 4.0f);
+    g.fillPath (leftArrow);
+    
+    // Метка "TIGHTEN" справа от стрелки (на расстоянии 10 пикселей)
+    g.setColour (Colors::brassLight);
+    g.drawText ("TIGHTEN", 
+                meterBg.getX() + 25, 
+                meterBg.getY() + 5,
+                70,
+                15,
+                juce::Justification::centred);
+    
+    // Стрелка вправо (ослаблять)
+    juce::Path rightArrow;
+    rightArrow.addArrow (juce::Line<float> (meterBg.getRight() - 15, meterBg.getY() + 12, 
+                                            meterBg.getRight() - 5, meterBg.getY() + 12), 3.0f, 6.0f, 4.0f);
+    g.fillPath (rightArrow);
+    
+    // Метка "LOOSEN" слева от стрелки (на расстоянии 10 пикселей)
+    g.drawText ("LOOSEN", 
+                meterBg.getRight() - 85, 
+                meterBg.getY() + 5,
+                70,
+                15,
+                juce::Justification::centred);
+    
+    // Центральная отметка
     float centerX = startX + 5 * tickStep;
     g.setColour (Colors::brassHighlight);
     g.drawLine (centerX, meterBg.getY() + meterBg.getHeight() - 20,
@@ -179,6 +210,7 @@ void MeterPanel::drawMeter (juce::Graphics& g, juce::Rectangle<int> area)
     
     drawNeedle (g, meterBg, smoothedCents);
 }
+
 
 void MeterPanel::drawNeedle (juce::Graphics& g, juce::Rectangle<int> meterArea, float cents)
 {
@@ -224,20 +256,3 @@ void MeterPanel::resized()
 {
     // Нет дочерних компонентов
 }
-
-
-/*
-  
- Стандартное поведение гитарных тюнеров:
-Стрелка показывает направление, в котором нужно крутить колок, чтобы достичь эталонной ноты.
-
-Как это работает:
-Стрелка влево (отрицательные центы) → частота ниже эталона (струна слишком низко/слабо натянута) → нужно крутить колок ПО ВОСХОДЯЩЕЙ (затягивать, повышать тон).
-
-Стрелка вправо (положительные центы) → частота выше эталона (струна слишком высоко/перетянута) → нужно крутить колок ПО НИСХОДЯЩЕЙ (ослаблять, понижать тон).
-
-Стрелка по центру (0 центов) → струна настроена идеально.
-
-
-  
- */ 

@@ -1,15 +1,12 @@
 #include "GuitarTunerProcessor.h"
 #include "GuitarTunerEditor.h"
 #include <cmath>
-#include <iostream>
 
 GuitarTunerAudioProcessor::GuitarTunerAudioProcessor()
     : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::mono(), true)
                                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
     , currentSampleRate (44100.0)
     , currentBlockSize (512)
-    , manualMode (false)
-    , selectedString (-1)
     , detectedFrequency (0.0f)
     , targetFrequency (0.0f)
     , centsDeviation (0.0f)
@@ -17,12 +14,10 @@ GuitarTunerAudioProcessor::GuitarTunerAudioProcessor()
     , targetNote ("--")
     , stringNumber (-1)
 {
-    std::cout << "GuitarTunerAudioProcessor created" << std::endl;
 }
 
 GuitarTunerAudioProcessor::~GuitarTunerAudioProcessor()
 {
-    std::cout << "GuitarTunerAudioProcessor destroyed" << std::endl;
 }
 
 const juce::String GuitarTunerAudioProcessor::getName() const
@@ -88,15 +83,11 @@ void GuitarTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
         targetNote = "--";
         stringNumber = -1;
     }
-    
-    std::cout << "prepareToPlay: sampleRate=" << sampleRate << ", samplesPerBlock=" << samplesPerBlock 
-              << ", analysisBlockSize=" << analysisBlockSize << std::endl;
 }
 
 void GuitarTunerAudioProcessor::releaseResources()
 {
     pitchDetector.reset();
-    std::cout << "releaseResources" << std::endl;
 }
 
 void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -109,57 +100,19 @@ void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     {
         const float* channelData = buffer.getReadPointer (0);
         
-        // Вычисляем RMS для отладки
-        double sumSquares = 0.0;
-        float peak = 0.0f;
-        for (int i = 0; i < numSamples; ++i)
-        {
-            float absSample = std::abs (channelData[i]);
-            sumSquares += channelData[i] * channelData[i];
-            if (absSample > peak)
-                peak = absSample;
-        }
-        float rms = std::sqrt (static_cast<float> (sumSquares / numSamples));
-        
-        // Отладочный вывод каждые 100 блоков
-        static int debugCounter = 0;
-        if (++debugCounter >= 100)
-        {
-            debugCounter = 0;
-            std::cout << "RMS: " << rms << ", Peak: " << peak << std::endl;
-        }
-        
-        // Всегда пытаемся определить частоту
         float frequency = pitchDetector->getFrequency (channelData, numSamples);
-        
-        // Отладочный вывод частоты каждые 100 блоков
-        static int freqCounter = 0;
-        if (++freqCounter >= 100)
-        {
-            freqCounter = 0;
-            std::cout << "Detected frequency: " << frequency << " Hz" << std::endl;
-        }
         
         if (frequency > 0.0f)
         {
             detectedFrequency = frequency;
             
-            if (manualMode && selectedString >= 0)
+            // Всегда автоматический режим: находим ближайшую струну
+            int closestString = findClosestString (frequency);
+            if (closestString >= 0)
             {
-                targetFrequency = STRINGS[selectedString].frequency;
-                targetNote = STRINGS[selectedString].noteName;
-                stringNumber = 6 - selectedString;
-            }
-            else
-            {
-                int closestString = findClosestString (frequency);
-                if (closestString >= 0)
-                {
-                    targetFrequency = STRINGS[closestString].frequency;
-                    targetNote = STRINGS[closestString].noteName;
-                    stringNumber = 6 - closestString;
-                    selectedString = closestString;
-                }
+                targetFrequency = STRINGS[closestString].frequency;
+                targetNote = STRINGS[closestString].noteName;
+                stringNumber = 6 - closestString;
             }
             
             centsDeviation = calculateCents (detectedFrequency, targetFrequency);
@@ -167,15 +120,6 @@ void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
             {
                 juce::ScopedLock lock (stringDataLock);
                 detectedNote = frequencyToNoteName (frequency);
-            }
-            
-            // Отладка: показываем что определили
-            static int noteCounter = 0;
-            if (++noteCounter >= 100)
-            {
-                noteCounter = 0;
-                std::cout << "Note: " << detectedNote << ", Target: " << targetNote 
-                          << ", Cents: " << centsDeviation << std::endl;
             }
         }
         else
@@ -195,17 +139,6 @@ void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     {
         buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
     }
-}
-
-void GuitarTunerAudioProcessor::setManualMode (bool manual, int stringIndex)
-{
-    manualMode = manual;
-    if (manual && stringIndex >= 0 && stringIndex < 6)
-        selectedString = stringIndex;
-    else if (!manual)
-        selectedString = -1;
-    
-    std::cout << "Manual mode: " << (manual ? "ON" : "OFF") << ", selected string: " << selectedString << std::endl;
 }
 
 int GuitarTunerAudioProcessor::findClosestString (float frequency) const
@@ -273,25 +206,13 @@ juce::AudioProcessorEditor* GuitarTunerAudioProcessor::createEditor()
 void GuitarTunerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = juce::ValueTree ("GuitarTuner");
-    state.setProperty ("manualMode", manualMode, nullptr);
-    state.setProperty ("selectedString", selectedString, nullptr);
-    
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
     copyXmlToBinary (*xml, destData);
 }
 
 void GuitarTunerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
-    if (xml != nullptr)
-    {
-        auto state = juce::ValueTree::fromXml (*xml);
-        if (state.isValid())
-        {
-            manualMode = (bool) state.getProperty ("manualMode", false);
-            selectedString = (int) state.getProperty ("selectedString", -1);
-        }
-    }
+    // Восстанавливать нечего, всё в автоматическом режиме
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
