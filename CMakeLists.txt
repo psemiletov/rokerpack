@@ -78,7 +78,7 @@ juce_generate_juce_header(Grelka)
 target_sources(Grelka PRIVATE
   src/GrelkaProcessor.cpp
   src/GrelkaEditor.cpp
-  src/BronzaLookAndFeel.cpp  # Переиспользуем LookAndFeel
+  src/BronzaLookAndFeel.cpp
   src/dsp.cpp
   src/fx-resofilter.cpp
 )
@@ -216,8 +216,6 @@ target_link_libraries(Tembr PRIVATE
   juce::juce_recommended_warning_flags
 )
 
-
-
 # ==================== MISTRAL PLUGIN ====================
 juce_add_plugin(Mistral
   VERSION 1.0.0
@@ -256,14 +254,13 @@ target_link_libraries(Mistral PRIVATE
   juce::juce_recommended_warning_flags
 )
 
-
-# ==================== DRUZHBA PLUGIN ====================
-juce_add_plugin(Druzhba
+# ==================== GUITAR TUNER PLUGIN ====================
+juce_add_plugin(GuitarTuner
   VERSION 1.0.0
   COMPANY_NAME "Semiletov"
-  PRODUCT_NAME "Druzhba"
+  PRODUCT_NAME "Guitar Tuner"
   PLUGIN_MANUFACTURER_CODE Semi
-  PLUGIN_CODE Drzb
+  PLUGIN_CODE Gtun
   FORMATS VST3
   VST3_CATEGORIES Fx
   IS_SYNTH FALSE
@@ -272,16 +269,18 @@ juce_add_plugin(Druzhba
   COPY_PLUGIN_AFTER_BUILD FALSE
 )
 
-juce_generate_juce_header(Druzhba)
+juce_generate_juce_header(GuitarTuner)
 
-target_sources(Druzhba PRIVATE
-  src/DruzhbaProcessor.cpp
-  src/DruzhbaEditor.cpp
+target_sources(GuitarTuner PRIVATE
+  src/GuitarTunerProcessor.cpp
+  src/GuitarTunerEditor.cpp
+  src/StringsPanel.cpp
+  src/MeterPanel.cpp
+  src/PitchDetector.cpp
   src/BronzaLookAndFeel.cpp
-  src/dsp.cpp
 )
 
-target_compile_definitions(Druzhba PRIVATE
+target_compile_definitions(GuitarTuner PRIVATE
   JUCE_JACK=0
   JUCE_WEB_BROWSER=0
   JUCE_USE_CURL=0
@@ -289,7 +288,7 @@ target_compile_definitions(Druzhba PRIVATE
   JUCE_DISPLAY_SPLASH_SCREEN=0
 )
 
-target_link_libraries(Druzhba PRIVATE
+target_link_libraries(GuitarTuner PRIVATE
   juce::juce_audio_utils
   juce::juce_recommended_config_flags
   juce::juce_recommended_lto_flags
