@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "PitchDetector.h"
+#include "GateDetector.h"
 
 class GuitarTunerAudioProcessor : public juce::AudioProcessor
 {
@@ -37,8 +38,13 @@ public:
     juce::String getTargetNote() const { juce::ScopedLock lock (stringDataLock); return targetNote; }
     int getStringNumber() const { return stringNumber; }
     float getCentsDeviation() const { return centsDeviation.load(); }
+    bool isSignalActive() const { return signalActive.load(); }
 
 private:
+   
+   GateDetector gateDetector;
+   std::atomic<bool> signalActive;
+   
     int findClosestString (float frequency) const;
     float calculateCents (float detectedFreq, float targetFreq) const;
     juce::String frequencyToNoteName (float frequency) const;

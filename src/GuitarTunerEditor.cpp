@@ -102,7 +102,7 @@ void GuitarTunerAudioEditor::timerCallback()
 {
     updateUIFromProcessor();
 }
-
+/*
 void GuitarTunerAudioEditor::updateUIFromProcessor()
 {
     if (isUpdatingUI)
@@ -141,6 +141,60 @@ void GuitarTunerAudioEditor::updateUIFromProcessor()
         }
         
         stringsPanel.setActiveString (activeStringIndex);
+    }
+    
+    isUpdatingUI = false;
+}
+*/
+
+void GuitarTunerAudioEditor::updateUIFromProcessor()
+{
+    if (isUpdatingUI)
+        return;
+    
+    isUpdatingUI = true;
+    
+    bool hasSignal = audioProcessor.isSignalActive();
+    
+    if (!hasSignal)
+    {
+        // Нет сигнала — показываем прочерки и сбрасываем LED
+        meterPanel.updateValues (0.0f, 0.0f, "--", "--", -1, 0.0f);
+        stringsPanel.resetLEDs();
+    }
+    else
+    {
+        float detectedFreq = audioProcessor.getDetectedFrequency();
+        float targetFreq = audioProcessor.getTargetFrequency();
+        juce::String detectedNote = audioProcessor.getDetectedNote();
+        juce::String targetNote = audioProcessor.getTargetNote();
+        int stringNum = audioProcessor.getStringNumber();
+        float cents = audioProcessor.getCentsDeviation();
+        
+        meterPanel.updateValues (detectedFreq, targetFreq, detectedNote, targetNote,
+                                stringNum, cents);
+        
+        if (detectedFreq <= 0.0f)
+        {
+            stringsPanel.resetLEDs();
+        }
+        else
+        {
+            int activeStringIndex = -1;
+            float targetFreqLocal = audioProcessor.getTargetFrequency();
+            const float stringFreqs[6] = { 82.41f, 110.00f, 146.83f, 196.00f, 246.94f, 329.63f };
+            
+            for (int i = 0; i < 6; ++i)
+            {
+                if (std::abs (targetFreqLocal - stringFreqs[i]) < 0.5f)
+                {
+                    activeStringIndex = i;
+                    break;
+                }
+            }
+            
+            stringsPanel.setActiveString (activeStringIndex);
+        }
     }
     
     isUpdatingUI = false;

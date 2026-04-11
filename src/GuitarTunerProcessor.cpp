@@ -89,7 +89,7 @@ void GuitarTunerAudioProcessor::releaseResources()
 {
     pitchDetector.reset();
 }
-
+/*
 void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -135,6 +135,75 @@ void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     }
     
     // Пропускаем аудио без изменений
+    if (buffer.getNumChannels() > 1)
+    {
+        buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
+    }
+}
+*/
+
+void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+{
+    juce::ScopedNoDenormals noDenormals;
+    
+    int numSamples = buffer.getNumSamples();
+    
+    if (numSamples > 0 && buffer.getNumChannels() > 0)
+    {
+        const float* channelData = buffer.getReadPointer (0);
+        
+        // Проверяем наличие сигнала
+        gateDetector.processBlock (channelData, numSamples);
+        bool hasSignal = gateDetector.isSignalPresent();
+        signalActive = hasSignal;
+        
+        if (hasSignal)
+        {
+            float frequency = pitchDetector->getFrequency (channelData, numSamples);
+            
+            if (frequency > 0.0f)
+            {
+                detectedFrequency = frequency;
+                
+                int closestString = findClosestString (frequency);
+                if (closestString >= 0)
+                {
+                    targetFrequency = STRINGS[closestString].frequency;
+                    targetNote = STRINGS[closestString].noteName;
+                    stringNumber = 6 - closestString;
+                }
+                
+                centsDeviation = calculateCents (detectedFrequency, targetFrequency);
+                
+                {
+                    juce::ScopedLock lock (stringDataLock);
+                    detectedNote = frequencyToNoteName (frequency);
+                }
+            }
+            else
+            {
+                detectedFrequency = 0.0f;
+                centsDeviation = 0.0f;
+                {
+                    juce::ScopedLock lock (stringDataLock);
+                    detectedNote = "--";
+                }
+            }
+        }
+        else
+        {
+            // Нет сигнала — сбрасываем всё
+            detectedFrequency = 0.0f;
+            centsDeviation = 0.0f;
+            {
+                juce::ScopedLock lock (stringDataLock);
+                detectedNote = "--";
+                targetNote = "--";
+                stringNumber = -1;
+            }
+        }
+    }
+    
     if (buffer.getNumChannels() > 1)
     {
         buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
