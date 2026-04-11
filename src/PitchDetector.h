@@ -18,7 +18,6 @@ private:
     double sampleRate;
     int blockSize;
     
-    // Кольцевой буфер для накопления сэмплов
     std::vector<float> ringBuffer;
     int writePosition;
     

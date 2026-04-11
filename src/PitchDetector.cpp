@@ -9,7 +9,6 @@ PitchDetector::PitchDetector (double sampleRate, int blockSize)
     ringBuffer.resize (blockSize * 2, 0.0f);
     diffBuffer.resize (blockSize);
     cmndfBuffer.resize (blockSize);
-    std::cout << "PitchDetector created: sampleRate=" << sampleRate << ", blockSize=" << blockSize << std::endl;
 }
 
 PitchDetector::~PitchDetector()
@@ -26,18 +25,15 @@ float PitchDetector::getFrequency (const float* buffer, int numSamples)
     if (buffer == nullptr || numSamples <= 0)
         return DEFAULT_FREQ;
     
-    // Добавляем новые сэмплы в кольцевой буфер
     for (int i = 0; i < numSamples; ++i)
     {
         ringBuffer[writePosition] = buffer[i];
         writePosition = (writePosition + 1) % ringBuffer.size();
     }
     
-    // Если в буфере недостаточно данных, возвращаем 0
     if (writePosition < blockSize && ringBuffer.size() - writePosition < blockSize)
         return DEFAULT_FREQ;
     
-    // Берём blockSize сэмплов из буфера (начиная с текущей позиции - blockSize)
     std::vector<float> analysisBuffer (blockSize);
     int readPos = writePosition - blockSize;
     if (readPos < 0)
@@ -49,7 +45,6 @@ float PitchDetector::getFrequency (const float* buffer, int numSamples)
         readPos = (readPos + 1) % ringBuffer.size();
     }
     
-    // Запускаем YIN на накопленном буфере
     float period = yin (analysisBuffer.data(), 0);
     
     if (period <= 0.0f)
@@ -65,7 +60,6 @@ float PitchDetector::getFrequency (const float* buffer, int numSamples)
 
 float PitchDetector::yin (const float* buffer, int startIndex)
 {
-    // Вычисление разностной функции
     for (int tau = 0; tau < blockSize; ++tau)
     {
         float sum = 0.0f;
@@ -77,7 +71,6 @@ float PitchDetector::yin (const float* buffer, int startIndex)
         diffBuffer[tau] = sum;
     }
     
-    // Кумулятивная нормализация
     cmndfBuffer[0] = 1.0f;
     float runningSum = 0.0f;
     
@@ -90,7 +83,6 @@ float PitchDetector::yin (const float* buffer, int startIndex)
             cmndfBuffer[tau] = diffBuffer[tau] * tau / runningSum;
     }
     
-    // Поиск первого минимума ниже порога
     int minIndex = -1;
     for (int tau = 2; tau < blockSize - 1; ++tau)
     {
@@ -103,7 +95,6 @@ float PitchDetector::yin (const float* buffer, int startIndex)
         }
     }
     
-    // Если не нашли, берём глобальный минимум
     if (minIndex == -1)
     {
         float minValue = cmndfBuffer[1];
@@ -118,7 +109,6 @@ float PitchDetector::yin (const float* buffer, int startIndex)
         }
     }
     
-    // Интерполяция
     float interpolatedTau = static_cast<float> (minIndex);
     if (minIndex > 0 && minIndex < blockSize - 1)
     {

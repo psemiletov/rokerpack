@@ -294,3 +294,47 @@ target_link_libraries(GuitarTuner PRIVATE
   juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
+
+
+# ==================== BASS TUNER PLUGIN ====================
+# ==================== BASS TUNER PLUGIN ====================
+# ==================== BASS TUNER PLUGIN ====================
+juce_add_plugin(BassTuner
+  VERSION 1.0.0
+  COMPANY_NAME "Semiletov"
+  PRODUCT_NAME "Bass Tuner"
+  PLUGIN_MANUFACTURER_CODE Semi
+  PLUGIN_CODE Bstn
+  FORMATS VST3
+  VST3_CATEGORIES Fx
+  IS_SYNTH FALSE
+  NEEDS_MIDI_INPUT FALSE
+  NEEDS_MIDI_OUTPUT FALSE
+  COPY_PLUGIN_AFTER_BUILD FALSE
+)
+
+juce_generate_juce_header(BassTuner)
+
+target_sources(BassTuner PRIVATE
+  src/BassTunerProcessor.cpp
+  src/BassTunerEditor.cpp
+  src/BassStringsPanel.cpp
+  src/MeterPanel.cpp
+  src/PitchDetector.cpp
+  src/BronzaLookAndFeel.cpp
+)
+
+target_compile_definitions(BassTuner PRIVATE
+  JUCE_JACK=0
+  JUCE_WEB_BROWSER=0
+  JUCE_USE_CURL=0
+  JUCE_VST3_CAN_REPLACE_VST2=0
+  JUCE_DISPLAY_SPLASH_SCREEN=0
+)
+
+target_link_libraries(BassTuner PRIVATE
+  juce::juce_audio_utils
+  juce::juce_recommended_config_flags
+  juce::juce_recommended_lto_flags
+  juce::juce_recommended_warning_flags
+)
