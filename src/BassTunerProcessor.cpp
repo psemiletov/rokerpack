@@ -67,12 +67,33 @@ void BassTunerAudioProcessor::changeProgramName (int index, const juce::String& 
     (void) newName;
 }
 
+/*
 void BassTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
     currentBlockSize = samplesPerBlock;
     
     int analysisBlockSize = juce::jmin (2048, samplesPerBlock * 2);
+    pitchDetector = std::make_unique<PitchDetector> (sampleRate, analysisBlockSize);
+    
+    detectedFrequency = 0.0f;
+    
+    {
+        juce::ScopedLock lock (stringDataLock);
+        detectedNote = "--";
+        targetNote = "--";
+        stringNumber = -1;
+    }
+}
+*/
+
+void BassTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+{
+    currentSampleRate = sampleRate;
+    currentBlockSize = samplesPerBlock;
+    
+    // Увеличиваем буфер для E1 (4096 сэмплов)
+    int analysisBlockSize = 4096;
     pitchDetector = std::make_unique<PitchDetector> (sampleRate, analysisBlockSize);
     
     detectedFrequency = 0.0f;

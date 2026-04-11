@@ -52,7 +52,9 @@ float PitchDetector::getFrequency (const float* buffer, int numSamples)
     
     float frequency = static_cast<float> (sampleRate) / period;
     
-    if (frequency < 40.0f || frequency > 1000.0f)
+ //   if (frequency < 40.0f || frequency > 1000.0f)
+       
+    if (frequency < 30.0f || frequency > 1000.0f)
         return DEFAULT_FREQ;
     
     return frequency;
