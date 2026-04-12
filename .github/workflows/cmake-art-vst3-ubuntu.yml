@@ -1,4 +1,4 @@
-name: CMake build RokerPack VST3 plugins on Ubuntu
+name: CMake build RokerPack VST3 plugins
 
 on: [workflow_dispatch]
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Install dependencies
       run: |
@@ -47,7 +47,7 @@ jobs:
         rm -rf temp_archive
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: RokerPack_${{env.BUILD_TYPE}}
         path: ${{github.workspace}}/RokerPack_${{env.BUILD_TYPE}}.zip
