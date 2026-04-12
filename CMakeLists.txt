@@ -8,8 +8,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Подтягиваем JUCE
 # set(JUCETAG "7.0.12")
-set(JUCETAG "8.0.12")
+#set(JUCETAG "8.0.12")
+#include(FetchContent)
+
+
+IF (WIN32)
+set (JUCETAG 7.0.10)
+  # set stuff for windows
+ELSE()
+set (JUCETAG 8.0.11)
+  # set stuff for other systems
+ENDIF()
 include(FetchContent)
+
 
 FetchContent_Declare(
   juce
