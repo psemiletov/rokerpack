@@ -7,7 +7,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Подтягиваем JUCE
-set(JUCETAG "7.0.12")
+# set(JUCETAG "7.0.12")
+set(JUCETAG "8.0.12")
 include(FetchContent)
 
 FetchContent_Declare(
