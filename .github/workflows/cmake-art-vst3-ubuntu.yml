@@ -4,7 +4,6 @@ on: [workflow_dispatch]
 
 env:
   BUILD_TYPE: Release
-  PLUGINS: "Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner"
 
 jobs:
   build:
@@ -24,22 +23,44 @@ jobs:
             libwebkit2gtk-4.0-dev libglu1-mesa-dev mesa-common-dev
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build all plugins
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build build --config ${{env.BUILD_TYPE}}
+
+    - name: Debug - list build directory
+      run: |
+        echo "=== Listing build directory ==="
+        ls -la build/
+        echo "=== Looking for artefacts ==="
+        find build -name "*_artefacts" -type d
+        echo "=== Looking for .vst3 ==="
+        find build -name "*.vst3" -type d
 
     - name: Create ZIP
       run: |
         # Создаём папку RokerPack
         mkdir RokerPack
         
-        # Копируем плагины в неё
+        # Копируем плагины (пути будут уточнены после дебага)
         for plugin in Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner; do
-          cp -r build/${plugin}_artefacts/Release/VST3/${plugin}.vst3 RokerPack/
+          # Пробуем разные возможные пути
+          if [ -d "build/${plugin}_artefacts/${BUILD_TYPE}/VST3/${plugin}.vst3" ]; then
+            cp -r "build/${plugin}_artefacts/${BUILD_TYPE}/VST3/${plugin}.vst3" RokerPack/
+          elif [ -d "build/${plugin}_artefacts/VST3/${plugin}.vst3" ]; then
+            cp -r "build/${plugin}_artefacts/VST3/${plugin}.vst3" RokerPack/
+          elif [ -d "build/${plugin}_artefacts/${plugin}.vst3" ]; then
+            cp -r "build/${plugin}_artefacts/${plugin}.vst3" RokerPack/
+          else
+            echo "Warning: ${plugin}.vst3 not found"
+          fi
         done
         
-        # Архивируем папку RokerPack в RokerPack.zip
+        # Проверяем, что скопировалось
+        echo "=== Copied plugins ==="
+        ls -la RokerPack/
+        
+        # Создаём архив
         zip -r RokerPack.zip RokerPack
 
     - name: Upload artifacts

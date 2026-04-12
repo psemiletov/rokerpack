@@ -298,8 +298,6 @@ target_link_libraries(GuitarTuner PRIVATE
 
 
 # ==================== BASS TUNER PLUGIN ====================
-# ==================== BASS TUNER PLUGIN ====================
-# ==================== BASS TUNER PLUGIN ====================
 juce_add_plugin(BassTuner
   VERSION 1.0.0
   COMPANY_NAME "Semiletov"
