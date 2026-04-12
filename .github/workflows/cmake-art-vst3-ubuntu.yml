@@ -29,32 +29,22 @@ jobs:
     - name: Build all plugins
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Create ZIP with plugins
+    - name: Create ZIP
       run: |
-        # Создаём временную директорию с нужным именем
-        mkdir -p ${{github.workspace}}/RokerPack_${{env.BUILD_TYPE}}
+        # Создаём папку RokerPack
+        mkdir RokerPack
         
-        # Копируем плагины
-        for plugin in ${{env.PLUGINS}}; do
-          echo "Copying $plugin..."
-          src_path="${{github.workspace}}/build/${plugin}_artefacts/${{env.BUILD_TYPE}}/VST3/${plugin}.vst3"
-          if [ -d "$src_path" ]; then
-            cp -r "$src_path" ${{github.workspace}}/RokerPack_${{env.BUILD_TYPE}}/
-          else
-            echo "Warning: ${plugin}.vst3 not found at $src_path"
-          fi
+        # Копируем плагины в неё
+        for plugin in Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner; do
+          cp -r build/${plugin}_artefacts/Release/VST3/${plugin}.vst3 RokerPack/
         done
         
-        # Архивируем ВСЮ папку
-        cd ${{github.workspace}}
-        zip -r RokerPack_${{env.BUILD_TYPE}}.zip RokerPack_${{env.BUILD_TYPE}}
-        
-        # Удаляем временную папку
-        rm -rf RokerPack_${{env.BUILD_TYPE}}
+        # Архивируем папку RokerPack в RokerPack.zip
+        zip -r RokerPack.zip RokerPack
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v5
       with:
-        name: RokerPack_${{env.BUILD_TYPE}}
-        path: ${{github.workspace}}/RokerPack_${{env.BUILD_TYPE}}.zip
+        name: RokerPack
+        path: RokerPack.zip
         retention-days: 30
