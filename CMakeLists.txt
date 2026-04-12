@@ -3,6 +3,8 @@ project(RokerPack VERSION 1.0.0)
 
 cmake_policy(SET CMP0135 NEW)
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
