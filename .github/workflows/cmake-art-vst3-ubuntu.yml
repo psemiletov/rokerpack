@@ -1,0 +1,55 @@
+name: CMake build RokerPack all formats
+
+on: [workflow_dispatch]
+
+env:
+  BUILD_TYPE: Release
+  PLUGINS: "Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner"
+  FORMATS: "VST3"  # Добавьте: "VST3 AU LV2" если нужно
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+          sudo apt update
+          sudo apt install -y git make g++ cmake pkg-config \
+            libasound2-dev libjack-jackd2-dev ladspa-sdk \
+            libcurl4-openssl-dev libfreetype6-dev libx11-dev \
+            libxcomposite-dev libxcursor-dev libxext-dev \
+            libxinerama-dev libxrandr-dev libxrender-dev \
+            libwebkit2gtk-4.0-dev libglu1-mesa-dev mesa-common-dev
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build all plugins
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel
+
+    - name: Prepare artifacts
+      run: |
+        mkdir -p ${{github.workspace}}/artifacts
+        for plugin in ${{env.PLUGINS}}; do
+          for format in ${{env.FORMATS}}; do
+            src_dir="${{github.workspace}}/build/${plugin}_artefacts/${{env.BUILD_TYPE}}/${format}"
+            if [ -d "$src_dir" ]; then
+              cp -r "$src_dir" ${{github.workspace}}/artifacts/
+            fi
+          done
+        done
+
+    - name: Create ZIP
+      run: |
+        cd ${{github.workspace}}/artifacts
+        zip -r ../RokerPack_${{env.BUILD_TYPE}}.zip .
+
+    - name: Upload
+      uses: actions/upload-artifact@v4
+      with:
+        name: RokerPack_Plugins
+        path: ${{github.workspace}}/RokerPack_${{env.BUILD_TYPE}}.zip
+        retention-days: 30
