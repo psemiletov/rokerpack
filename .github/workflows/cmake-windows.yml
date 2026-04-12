@@ -1,0 +1,53 @@
+name: CMake build RokerPack VST3 plugins for Windows
+
+on: [workflow_dispatch]
+
+env:
+  BUILD_TYPE: Release
+  PLUGINS: "Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner"
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install dependencies
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        choco install ninja
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -G "Visual Studio 17 2022" -A x64
+
+    - name: Build all plugins
+      run: |
+        cmake --build build --config ${{env.BUILD_TYPE}} --parallel
+
+    - name: Copy plugins to directory
+      run: |
+        New-Item -ItemType Directory -Force -Path RokerPackWin
+        
+        foreach ($plugin in $env:PLUGINS.Split(' ')) {
+          $path1 = "build/${plugin}_artefacts/$env:BUILD_TYPE/VST3/${plugin}.vst3"
+          $path2 = "build/${plugin}_artefacts/VST3/${plugin}.vst3"
+          
+          if (Test-Path $path1) {
+            Copy-Item -Recurse $path1 "RokerPackWin/"
+            Write-Host "Copied $plugin from $path1"
+          } elseif (Test-Path $path2) {
+            Copy-Item -Recurse $path2 "RokerPackWin/"
+            Write-Host "Copied $plugin from $path2"
+          } else {
+            Write-Host "Warning: $plugin not found"
+          }
+        }
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: RokerPackWin
+        path: RokerPackWin
+        retention-days: 30
