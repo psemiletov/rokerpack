@@ -31,30 +31,20 @@ jobs:
 
     - name: Create ZIP
       run: |
-        # Создаём папку RokerPack
+        # Создаём папку с плагинами
         mkdir RokerPack
-        
-        # Копируем все плагины (теперь все имена без пробелов)
         for plugin in ${{env.PLUGINS}}; do
           if [ -d "build/${plugin}_artefacts/VST3/${plugin}.vst3" ]; then
             cp -r "build/${plugin}_artefacts/VST3/${plugin}.vst3" RokerPack/
-            echo "Copied $plugin"
           elif [ -d "build/${plugin}_artefacts/Release/VST3/${plugin}.vst3" ]; then
             cp -r "build/${plugin}_artefacts/Release/VST3/${plugin}.vst3" RokerPack/
-            echo "Copied $plugin"
-          else
-            echo "Warning: $plugin not found"
-            # Показываем, что есть в директории для отладки
-            ls -la "build/${plugin}_artefacts/" 2>/dev/null || echo "No artefacts for $plugin"
           fi
         done
         
-        # Проверяем результат
-        echo "=== RokerPack contents ==="
-        ls -la RokerPack/
-        
-        # Создаём архив
-        zip -r RokerPack.zip RokerPack
+        # Архивируем содержимое ПАПКИ RokerPack, а не саму папку
+        cd RokerPack
+        zip -r ../RokerPack.zip .
+        cd ..
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v5
