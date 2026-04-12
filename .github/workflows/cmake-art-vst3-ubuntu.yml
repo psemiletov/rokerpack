@@ -5,7 +5,6 @@ on: [workflow_dispatch]
 env:
   BUILD_TYPE: Release
   PLUGINS: "Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner"
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -32,20 +31,26 @@ jobs:
 
     - name: Create ZIP with plugins
       run: |
-        mkdir -p ${{github.workspace}}/temp_archive
+        # Создаём корневую папку для архива
+        mkdir -p ${{github.workspace}}/RokerPack_${{env.BUILD_TYPE}}
+        
+        # Копируем плагины в эту папку
         for plugin in ${{env.PLUGINS}}; do
           echo "Copying $plugin..."
           src_path="${{github.workspace}}/build/${plugin}_artefacts/${{env.BUILD_TYPE}}/VST3/${plugin}.vst3"
           if [ -d "$src_path" ]; then
-            cp -r "$src_path" ${{github.workspace}}/temp_archive/
+            cp -r "$src_path" ${{github.workspace}}/RokerPack_${{env.BUILD_TYPE}}/
           else
             echo "Warning: ${plugin}.vst3 not found at $src_path"
           fi
         done
-        cd ${{github.workspace}}/temp_archive
-        zip -r ../RokerPack_${{env.BUILD_TYPE}}.zip .
+        
+        # Архивируем папку
         cd ${{github.workspace}}
-        rm -rf temp_archive
+        zip -r RokerPack_${{env.BUILD_TYPE}}.zip RokerPack_${{env.BUILD_TYPE}}
+        
+        # Удаляем временную папку
+        rm -rf RokerPack_${{env.BUILD_TYPE}}
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v5
