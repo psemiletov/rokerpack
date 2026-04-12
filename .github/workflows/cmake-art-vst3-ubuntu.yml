@@ -1,11 +1,10 @@
-name: CMake build RokerPack all formats
+name: CMake build RokerPack VST3 plugins on Ubuntu
 
 on: [workflow_dispatch]
 
 env:
   BUILD_TYPE: Release
   PLUGINS: "Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner"
-  FORMATS: "VST3"  # Добавьте: "VST3 AU LV2" если нужно
 
 jobs:
   build:
@@ -30,26 +29,26 @@ jobs:
     - name: Build all plugins
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Prepare artifacts
+    - name: Create ZIP with plugins
       run: |
-        mkdir -p ${{github.workspace}}/artifacts
+        mkdir -p ${{github.workspace}}/temp_archive
         for plugin in ${{env.PLUGINS}}; do
-          for format in ${{env.FORMATS}}; do
-            src_dir="${{github.workspace}}/build/${plugin}_artefacts/${{env.BUILD_TYPE}}/${format}"
-            if [ -d "$src_dir" ]; then
-              cp -r "$src_dir" ${{github.workspace}}/artifacts/
-            fi
-          done
+          echo "Copying $plugin..."
+          src_path="${{github.workspace}}/build/${plugin}_artefacts/${{env.BUILD_TYPE}}/VST3/${plugin}.vst3"
+          if [ -d "$src_path" ]; then
+            cp -r "$src_path" ${{github.workspace}}/temp_archive/
+          else
+            echo "Warning: ${plugin}.vst3 not found at $src_path"
+          fi
         done
-
-    - name: Create ZIP
-      run: |
-        cd ${{github.workspace}}/artifacts
+        cd ${{github.workspace}}/temp_archive
         zip -r ../RokerPack_${{env.BUILD_TYPE}}.zip .
+        cd ${{github.workspace}}
+        rm -rf temp_archive
 
-    - name: Upload
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: RokerPack_Plugins
+        name: RokerPack_${{env.BUILD_TYPE}}
         path: ${{github.workspace}}/RokerPack_${{env.BUILD_TYPE}}.zip
         retention-days: 30
