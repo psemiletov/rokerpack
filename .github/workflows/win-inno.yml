@@ -1,0 +1,110 @@
+name: Win -Inno Installer
+
+on: [workflow_dispatch]
+
+env:
+  BUILD_TYPE: Release
+  PLUGINS: "Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner"
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install dependencies
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        choco install ninja
+        choco install innosetup
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -G "Visual Studio 17 2022" -A x64
+
+    - name: Build all plugins
+      run: |
+        cmake --build build --config ${{env.BUILD_TYPE}} --parallel
+
+    - name: Prepare plugin files for installer
+      run: |
+        New-Item -ItemType Directory -Force -Path InstallerFiles
+        
+        foreach ($plugin in $env:PLUGINS.Split(' ')) {
+          $path1 = "build/${plugin}_artefacts/$env:BUILD_TYPE/VST3/${plugin}.vst3"
+          $path2 = "build/${plugin}_artefacts/VST3/${plugin}.vst3"
+          
+          if (Test-Path $path1) {
+            Copy-Item -Recurse $path1 "InstallerFiles/"
+            Write-Host "Copied $plugin from $path1"
+          } elseif (Test-Path $path2) {
+            Copy-Item -Recurse $path2 "InstallerFiles/"
+            Write-Host "Copied $plugin from $path2"
+          } else {
+            Write-Host "Warning: $plugin not found"
+          }
+        }
+        
+        # Проверяем, что скопировалось
+        Get-ChildItem -Path InstallerFiles
+
+    - name: Create Inno Setup script
+      run: |
+        $script = @"
+; RokerPack Installer
+; Inno Setup Script for RokerPack VST3 Plugins
+
+[Setup]
+AppId=RokerPack
+AppName=RokerPack
+AppVersion=1.0.0
+AppPublisher=Semiletov
+AppPublisherURL=https://github.com/psemiletov/rokerpack
+AppSupportURL=https://github.com/psemiletov/rokerpack
+AppUpdatesURL=https://github.com/psemiletov/rokerpack
+DefaultDirName={commoncf64}\VST3
+DefaultGroupName=RokerPack
+LicenseFile=LICENSE
+OutputDir=.
+OutputBaseFilename=RokerPack-Setup
+Compression=lzma2
+SolidCompression=yes
+WizardStyle=modern
+PrivilegesRequired=admin
+ArchitecturesInstallIn64BitMode=x64
+
+[Files]
+"@
+
+        # Добавляем все плагины в секцию Files
+        $plugins = $env:PLUGINS.Split(' ')
+        foreach ($plugin in $plugins) {
+          $script += @"
+Source: "InstallerFiles\$plugin.vst3"; DestDir: "{app}"; Flags: recursesubdirs
+"@
+        }
+
+        $script += @"
+
+[Icons]
+Name: "{group}\Uninstall RokerPack"; Filename: "{uninstallexe}"
+
+[Run]
+Filename: "{app}\"
+"@
+
+        # Сохраняем скрипт
+        $script | Out-File -FilePath "RokerPack.iss" -Encoding UTF8
+
+    - name: Build installer with Inno Setup
+      run: |
+        # Запускаем компиляцию Inno Setup скрипта
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "RokerPack.iss"
+
+    - name: Upload installer as artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: RokerPackInstaller
+        path: RokerPack-Setup.exe
+        retention-days: 30
