@@ -50,6 +50,7 @@ target_compile_definitions(Bronza PRIVATE
   JUCE_USE_CURL=0
   JUCE_VST3_CAN_REPLACE_VST2=0
   JUCE_DISPLAY_SPLASH_SCREEN=0
+  JUCE_WIN_PER_MONITOR_DPI_AWARE=0
 )
 
 target_link_libraries(Bronza PRIVATE
