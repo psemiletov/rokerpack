@@ -1,4 +1,4 @@
-name: Win -Inno Installer
+name: CMake build RokerPack VST3 plugins for Windows with Installer
 
 on: [workflow_dispatch]
 
@@ -46,60 +46,55 @@ jobs:
           }
         }
         
-        # Проверяем, что скопировалось
         Get-ChildItem -Path InstallerFiles
 
     - name: Create Inno Setup script
+      shell: pwsh
       run: |
-        $script = @"
-; RokerPack Installer
-; Inno Setup Script for RokerPack VST3 Plugins
+        $script = @'
+        ; RokerPack Installer
+        ; Inno Setup Script for RokerPack VST3 Plugins
 
-[Setup]
-AppId=RokerPack
-AppName=RokerPack
-AppVersion=1.0.0
-AppPublisher=Semiletov
-AppPublisherURL=https://github.com/psemiletov/rokerpack
-AppSupportURL=https://github.com/psemiletov/rokerpack
-AppUpdatesURL=https://github.com/psemiletov/rokerpack
-DefaultDirName={commoncf64}\VST3
-DefaultGroupName=RokerPack
-LicenseFile=LICENSE
-OutputDir=.
-OutputBaseFilename=RokerPack-Setup
-Compression=lzma2
-SolidCompression=yes
-WizardStyle=modern
-PrivilegesRequired=admin
-ArchitecturesInstallIn64BitMode=x64
+        [Setup]
+        AppId=RokerPack
+        AppName=RokerPack
+        AppVersion=1.0.0
+        AppPublisher=Semiletov
+        AppPublisherURL=https://github.com/psemiletov/rokerpack
+        AppSupportURL=https://github.com/psemiletov/rokerpack
+        AppUpdatesURL=https://github.com/psemiletov/rokerpack
+        DefaultDirName={commoncf64}\VST3
+        DefaultGroupName=RokerPack
+        LicenseFile=LICENSE
+        OutputDir=.
+        OutputBaseFilename=RokerPack-Setup
+        Compression=lzma2
+        SolidCompression=yes
+        WizardStyle=modern
+        PrivilegesRequired=admin
+        ArchitecturesInstallIn64BitMode=x64
 
-[Files]
-"@
+        [Files]
+        '@
 
-        # Добавляем все плагины в секцию Files
         $plugins = $env:PLUGINS.Split(' ')
         foreach ($plugin in $plugins) {
-          $script += @"
-Source: "InstallerFiles\$plugin.vst3"; DestDir: "{app}"; Flags: recursesubdirs
-"@
+          $script += "Source: `"InstallerFiles\$plugin.vst3`"; DestDir: `"{app}`"; Flags: recursesubdirs`n"
         }
 
-        $script += @"
+        $script += @'
 
-[Icons]
-Name: "{group}\Uninstall RokerPack"; Filename: "{uninstallexe}"
+        [Icons]
+        Name: "{group}\Uninstall RokerPack"; Filename: "{uninstallexe}"
 
-[Run]
-Filename: "{app}\"
-"@
+        [Run]
+        Filename: "{app}\"
+        '@
 
-        # Сохраняем скрипт
         $script | Out-File -FilePath "RokerPack.iss" -Encoding UTF8
 
     - name: Build installer with Inno Setup
       run: |
-        # Запускаем компиляцию Inno Setup скрипта
         & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "RokerPack.iss"
 
     - name: Upload installer as artifact
