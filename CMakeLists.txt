@@ -258,7 +258,7 @@ target_link_libraries(Mistral PRIVATE
 juce_add_plugin(GuitarTuner
   VERSION 1.0.0
   COMPANY_NAME "Semiletov"
-  PRODUCT_NAME "Guitar Tuner"
+  PRODUCT_NAME "GuitarTuner"
   PLUGIN_MANUFACTURER_CODE Semi
   PLUGIN_CODE Gtun
   FORMATS VST3
@@ -301,7 +301,7 @@ target_link_libraries(GuitarTuner PRIVATE
 juce_add_plugin(BassTuner
   VERSION 1.0.0
   COMPANY_NAME "Semiletov"
-  PRODUCT_NAME "Bass Tuner"
+  PRODUCT_NAME "BassTuner"
   PLUGIN_MANUFACTURER_CODE Semi
   PLUGIN_CODE Bstn
   FORMATS VST3

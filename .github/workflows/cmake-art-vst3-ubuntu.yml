@@ -4,6 +4,7 @@ on: [workflow_dispatch]
 
 env:
   BUILD_TYPE: Release
+  PLUGINS: "Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner"
 
 jobs:
   build:
@@ -28,36 +29,28 @@ jobs:
     - name: Build all plugins
       run: cmake --build build --config ${{env.BUILD_TYPE}}
 
-    - name: Debug - list build directory
-      run: |
-        echo "=== Listing build directory ==="
-        ls -la build/
-        echo "=== Looking for artefacts ==="
-        find build -name "*_artefacts" -type d
-        echo "=== Looking for .vst3 ==="
-        find build -name "*.vst3" -type d
-
     - name: Create ZIP
       run: |
         # Создаём папку RokerPack
         mkdir RokerPack
         
-        # Копируем плагины (пути будут уточнены после дебага)
-        for plugin in Bronza Grelka Metalluga Charm Tembr Mistral GuitarTuner BassTuner; do
-          # Пробуем разные возможные пути
-          if [ -d "build/${plugin}_artefacts/${BUILD_TYPE}/VST3/${plugin}.vst3" ]; then
-            cp -r "build/${plugin}_artefacts/${BUILD_TYPE}/VST3/${plugin}.vst3" RokerPack/
-          elif [ -d "build/${plugin}_artefacts/VST3/${plugin}.vst3" ]; then
+        # Копируем все плагины (теперь все имена без пробелов)
+        for plugin in ${{env.PLUGINS}}; do
+          if [ -d "build/${plugin}_artefacts/VST3/${plugin}.vst3" ]; then
             cp -r "build/${plugin}_artefacts/VST3/${plugin}.vst3" RokerPack/
-          elif [ -d "build/${plugin}_artefacts/${plugin}.vst3" ]; then
-            cp -r "build/${plugin}_artefacts/${plugin}.vst3" RokerPack/
+            echo "Copied $plugin"
+          elif [ -d "build/${plugin}_artefacts/Release/VST3/${plugin}.vst3" ]; then
+            cp -r "build/${plugin}_artefacts/Release/VST3/${plugin}.vst3" RokerPack/
+            echo "Copied $plugin"
           else
-            echo "Warning: ${plugin}.vst3 not found"
+            echo "Warning: $plugin not found"
+            # Показываем, что есть в директории для отладки
+            ls -la "build/${plugin}_artefacts/" 2>/dev/null || echo "No artefacts for $plugin"
           fi
         done
         
-        # Проверяем, что скопировалось
-        echo "=== Copied plugins ==="
+        # Проверяем результат
+        echo "=== RokerPack contents ==="
         ls -la RokerPack/
         
         # Создаём архив
