@@ -31,10 +31,10 @@ jobs:
 
     - name: Create ZIP with plugins
       run: |
-        # Создаём корневую папку для архива
+        # Создаём временную директорию с нужным именем
         mkdir -p ${{github.workspace}}/RokerPack_${{env.BUILD_TYPE}}
         
-        # Копируем плагины в эту папку
+        # Копируем плагины
         for plugin in ${{env.PLUGINS}}; do
           echo "Copying $plugin..."
           src_path="${{github.workspace}}/build/${plugin}_artefacts/${{env.BUILD_TYPE}}/VST3/${plugin}.vst3"
@@ -45,7 +45,7 @@ jobs:
           fi
         done
         
-        # Архивируем папку
+        # Архивируем ВСЮ папку
         cd ${{github.workspace}}
         zip -r RokerPack_${{env.BUILD_TYPE}}.zip RokerPack_${{env.BUILD_TYPE}}
         
