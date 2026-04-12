@@ -3,7 +3,7 @@ project(RokerPack VERSION 1.0.0)
 
 cmake_policy(SET CMP0135 NEW)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Подтягиваем JUCE
@@ -67,7 +67,7 @@ target_compile_definitions(Bronza PRIVATE
 target_link_libraries(Bronza PRIVATE
   juce::juce_audio_utils
   juce::juce_recommended_config_flags
-  juce::juce_recommended_lto_flags
+#  juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
 
@@ -107,7 +107,7 @@ target_compile_definitions(Grelka PRIVATE
 target_link_libraries(Grelka PRIVATE
   juce::juce_audio_utils
   juce::juce_recommended_config_flags
-  juce::juce_recommended_lto_flags
+#  juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
 
@@ -147,7 +147,7 @@ target_compile_definitions(Metalluga PRIVATE
 target_link_libraries(Metalluga PRIVATE
   juce::juce_audio_utils
   juce::juce_recommended_config_flags
-  juce::juce_recommended_lto_flags
+#  juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
 
@@ -186,7 +186,7 @@ target_compile_definitions(Charm PRIVATE
 target_link_libraries(Charm PRIVATE
   juce::juce_audio_utils
   juce::juce_recommended_config_flags
-  juce::juce_recommended_lto_flags
+#  juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
 
@@ -225,7 +225,7 @@ target_compile_definitions(Tembr PRIVATE
 target_link_libraries(Tembr PRIVATE
   juce::juce_audio_utils
   juce::juce_recommended_config_flags
-  juce::juce_recommended_lto_flags
+#  juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
 
@@ -263,7 +263,7 @@ target_compile_definitions(Mistral PRIVATE
 target_link_libraries(Mistral PRIVATE
   juce::juce_audio_utils
   juce::juce_recommended_config_flags
-  juce::juce_recommended_lto_flags
+#  juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
 
@@ -305,7 +305,7 @@ target_compile_definitions(GuitarTuner PRIVATE
 target_link_libraries(GuitarTuner PRIVATE
   juce::juce_audio_utils
   juce::juce_recommended_config_flags
-  juce::juce_recommended_lto_flags
+#  juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
 
@@ -347,6 +347,6 @@ target_compile_definitions(BassTuner PRIVATE
 target_link_libraries(BassTuner PRIVATE
   juce::juce_audio_utils
   juce::juce_recommended_config_flags
-  juce::juce_recommended_lto_flags
+#  juce::juce_recommended_lto_flags
   juce::juce_recommended_warning_flags
 )
