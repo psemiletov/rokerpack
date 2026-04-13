@@ -113,8 +113,8 @@ private:
         static float lastGain = -999;
         if (lastGain != trebleGain)
         {
-            std::cout << "Treble gain: " << trebleGain << " dB, A: " << A << std::endl;
-            std::cout << "High shelf coeffs: b0=" << highB0 << ", b1=" << highB1 << ", b2=" << highB2 << std::endl;
+        //    std::cout << "Treble gain: " << trebleGain << " dB, A: " << A << std::endl;
+          //  std::cout << "High shelf coeffs: b0=" << highB0 << ", b1=" << highB1 << ", b2=" << highB2 << std::endl;
             lastGain = trebleGain;
         }
     }

@@ -1,7 +1,11 @@
 #include "BassTunerEditor.h"
+#include "BassStringsPanel.h"
+
+// Частоты струн бас-гитары
+constexpr float BASS_STRING_FREQS[NUM_BASS_STRINGS] = { 41.20f, 55.00f, 73.42f, 98.00f };
 
 BassTunerAudioEditor::BassTunerAudioEditor (BassTunerAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p), isUpdatingUI (false)
+    : AudioProcessorEditor (&p), audioProcessor (p)
 {
     setLookAndFeel (&bronzaLookAndFeel);
     
@@ -50,7 +54,7 @@ void BassTunerAudioEditor::paint (juce::Graphics& g)
     juce::Rectangle<int> titleArea (bounds.getX(), bounds.getY(), bounds.getWidth(), 60);
     
     g.setColour (juce::Colours::black.withAlpha (0.6f));
-    g.setFont (juce::Font (28.0f, juce::Font::bold));
+    g.setFont (juce::Font (28.0f, juce::Font::bold));  // ← старый конструктор
     g.drawFittedText ("Bass Tuner", 
                      titleArea.getX() + 2, 
                      titleArea.getY() + 2,
@@ -69,7 +73,7 @@ void BassTunerAudioEditor::paint (juce::Graphics& g)
                      1);
     
     g.setColour (Colors::textLight.withAlpha (0.7f));
-    g.setFont (juce::Font (12.0f, juce::Font::italic));
+    g.setFont (juce::Font (12.0f, juce::Font::italic));  // ← старый конструктор
     g.drawFittedText ("by Peter Semiletov", 
                      bounds.getX(), 
                      titleArea.getY() + 38,
@@ -100,16 +104,6 @@ void BassTunerAudioEditor::resized()
 
 void BassTunerAudioEditor::timerCallback()
 {
-    updateUIFromProcessor();
-}
-
-void BassTunerAudioEditor::updateUIFromProcessor()
-{
-    if (isUpdatingUI)
-        return;
-    
-    isUpdatingUI = true;
-    
     float detectedFreq = audioProcessor.getDetectedFrequency();
     float targetFreq = audioProcessor.getTargetFrequency();
     juce::String detectedNote = audioProcessor.getDetectedNote();
@@ -120,20 +114,19 @@ void BassTunerAudioEditor::updateUIFromProcessor()
     meterPanel.updateValues (detectedFreq, targetFreq, detectedNote, targetNote,
                             stringNum, cents);
     
-    if (detectedFreq <= 0.0f)
+    // Обновляем подсветку струн
+    if (detectedFreq < 0.5f)
     {
-        stringsPanel.setActiveString(-1); //reset leds
+        stringsPanel.setActiveString(-1);
     }
     else
     {
         int activeStringIndex = -1;
         float targetFreqLocal = audioProcessor.getTargetFrequency();
         
-        const float stringFreqs[4] = { 41.20f, 55.00f, 73.42f, 98.00f };
-        
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < NUM_BASS_STRINGS; ++i)
         {
-            if (std::abs (targetFreqLocal - stringFreqs[i]) < 0.5f)
+            if (std::abs (targetFreqLocal - BASS_STRING_FREQS[i]) < 0.5f)
             {
                 activeStringIndex = i;
                 break;
@@ -142,6 +135,4 @@ void BassTunerAudioEditor::updateUIFromProcessor()
         
         stringsPanel.setActiveString (activeStringIndex);
     }
-    
-    isUpdatingUI = false;
 }
