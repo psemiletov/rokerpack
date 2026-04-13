@@ -5,34 +5,39 @@ GrelkaAudioEditor::GrelkaAudioEditor (GrelkaAudioProcessor& p)
 {
     setLookAndFeel (&grelkaLookAndFeel);
     
-    // Drive
-    driveSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    driveSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    driveSlider.setRange (0.01f, 1.0f, 0.001f);
-    addAndMakeVisible (driveSlider);
-    
-    // Level
-    levelSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    levelSlider.setRange (-16.0f, 32.0f, 0.1f);
-    levelSlider.setTextValueSuffix (" dB");
-    addAndMakeVisible (levelSlider);
-    
-    // Lows
-    lowsSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    lowsSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    lowsSlider.setRange (40.0f, 1000.0f, 1.0f);
-    lowsSlider.setTextValueSuffix (" Hz");
-    addAndMakeVisible (lowsSlider);
-    
-    // Treble
-    trebleSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    trebleSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    trebleSlider.setRange (500.0f, 16500.0f, 10.0f);
-    trebleSlider.setTextValueSuffix (" Hz");
-    addAndMakeVisible (trebleSlider);
-    
-    // Attachments
+// Drive
+driveSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+driveSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+driveSlider.setRange (0.01f, 1.0f, 0.001f);
+driveSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
+addAndMakeVisible (driveSlider);
+
+// Level — только положительный (0 до 48 dB, где 0 dB — это ноль громкости)
+levelSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+levelSlider.setRange (0.0f, 48.0f, 0.1f);  // 0..48 dB
+levelSlider.setTextValueSuffix (" dB");
+levelSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
+addAndMakeVisible (levelSlider);
+
+
+// Lows
+lowsSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+lowsSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+lowsSlider.setRange (40.0f, 1000.0f, 1.0f);
+lowsSlider.setTextValueSuffix (" Hz");
+lowsSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
+addAndMakeVisible (lowsSlider);
+
+// Treble
+trebleSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+trebleSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+trebleSlider.setRange (500.0f, 16500.0f, 10.0f);
+trebleSlider.setTextValueSuffix (" Hz");
+trebleSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
+addAndMakeVisible (trebleSlider);
+
+// Attachments
     driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.apvts, "drive", driveSlider);
     levelAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(

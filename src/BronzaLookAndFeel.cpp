@@ -40,7 +40,18 @@ void BronzaLookAndFeel::drawRotarySlider (juce::Graphics& g,
     auto centreY = (float) y + (float) height * 0.5f;
     auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
     
-    // 1. Тень
+    // Угол 12 часов (наверху) в радианах
+    float twelveOClock = juce::MathConstants<float>::twoPi * 0.75f; // 270°
+    
+    // === МАЛЕНЬКАЯ ЧЁРНАЯ ТОЧКА НА 12 ЧАСОВ ===
+    float dotRadius = 2.5f;
+    float dotX = centreX + (radius + 5.0f) * std::cos(twelveOClock);
+    float dotY = centreY + (radius + 5.0f) * std::sin(twelveOClock);
+    
+    g.setColour (juce::Colours::black.withAlpha (0.8f));
+    g.fillEllipse (dotX - dotRadius, dotY - dotRadius, dotRadius * 2, dotRadius * 2);
+    
+    // 1. Тень кноба
     g.setColour (juce::Colours::black.withAlpha (0.4f));
     g.fillEllipse (centreX - radius + 2, centreY - radius + 2, radius * 2, radius * 2);
     
@@ -72,7 +83,6 @@ void BronzaLookAndFeel::drawRotarySlider (juce::Graphics& g,
         float ridgeX = centreX + ridgeRadius * std::cos (rotatedRidgeAngle);
         float ridgeY = centreY + ridgeRadius * std::sin (rotatedRidgeAngle);
         
-        // Выступы с градиентом
         juce::ColourGradient ridgeGradient (
             brassLight,
             ridgeX - 2, ridgeY - 2,

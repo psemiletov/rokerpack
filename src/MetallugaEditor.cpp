@@ -5,37 +5,43 @@ MetallugaAudioEditor::MetallugaAudioEditor (MetallugaAudioProcessor& p)
 {
     setLookAndFeel (&metallugaLookAndFeel);
     
-    // Drive
-    driveSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    driveSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    driveSlider.setRange (0.0f, 1.0f, 0.001f);
-    addAndMakeVisible (driveSlider);
-    
-    // Level
-    levelSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    levelSlider.setRange (-30.0f, 32.0f, 0.1f);
-    levelSlider.setTextValueSuffix (" dB");
-    addAndMakeVisible (levelSlider);
-    
-    // Weight
-    weightSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    weightSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    weightSlider.setRange (0.01f, 0.99f, 0.001f);
-    addAndMakeVisible (weightSlider);
-    
-    // Resonance
-    resoSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    resoSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    resoSlider.setRange (0.01f, 0.99f, 0.001f);
-    addAndMakeVisible (resoSlider);
-    
-    // Warmth
-    warmthSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    warmthSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    warmthSlider.setRange (0.01f, 0.99f, 0.001f);
-    addAndMakeVisible (warmthSlider);
-    
+// Drive
+driveSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+driveSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+driveSlider.setRange (0.0f, 1.0f, 0.001f);
+driveSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
+addAndMakeVisible (driveSlider);
+
+
+// Level — только положительный (0 до 62 dB)
+levelSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+levelSlider.setRange (0.0f, 62.0f, 0.1f);  // 0..62 dB
+levelSlider.setTextValueSuffix (" dB");
+levelSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
+addAndMakeVisible (levelSlider);
+
+// Weight
+weightSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+weightSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+weightSlider.setRange (0.01f, 0.99f, 0.001f);
+weightSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
+addAndMakeVisible (weightSlider);
+
+// Resonance
+resoSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+resoSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+resoSlider.setRange (0.01f, 0.99f, 0.001f);
+resoSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
+addAndMakeVisible (resoSlider);
+
+// Warmth
+warmthSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+warmthSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+warmthSlider.setRange (0.01f, 0.99f, 0.001f);
+warmthSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
+addAndMakeVisible (warmthSlider);
+
     // Attachments
     driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.apvts, "drive", driveSlider);

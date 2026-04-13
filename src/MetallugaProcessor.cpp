@@ -6,7 +6,7 @@ MetallugaAudioProcessor::MetallugaAudioProcessor()
                                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
        apvts (*this, nullptr, "Parameters", {
            std::make_unique<juce::AudioParameterFloat> ("drive", "Drive", 0.0f, 1.0f, 0.50f),
-           std::make_unique<juce::AudioParameterFloat> ("level", "Level", -30.0f, 32.0f, 0.0f),
+           std::make_unique<juce::AudioParameterFloat> ("level", "Level", 0.0f, 32.0f, 0.0f),
            std::make_unique<juce::AudioParameterFloat> ("weight", "Weight", 0.01f, 0.99f, 0.68f),
            std::make_unique<juce::AudioParameterFloat> ("reso", "Resonance", 0.01f, 0.99f, 0.50f),
            std::make_unique<juce::AudioParameterFloat> ("warmth", "Warmth", 0.01f, 0.99f, 0.50f)

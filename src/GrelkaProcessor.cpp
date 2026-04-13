@@ -6,7 +6,7 @@ GrelkaAudioProcessor::GrelkaAudioProcessor()
                                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
        apvts (*this, nullptr, "Parameters", {
            std::make_unique<juce::AudioParameterFloat> ("drive", "Drive", 0.01f, 1.0f, 0.16f),
-           std::make_unique<juce::AudioParameterFloat> ("level", "Level", -16.0f, 32.0f, 16.0f),
+           std::make_unique<juce::AudioParameterFloat> ("level", "Level", 0.0f, 32.0f, 16.0f),
            std::make_unique<juce::AudioParameterFloat> ("lows", "Lows", 40.0f, 1000.0f, 200.0f),
   //         std::make_unique<juce::AudioParameterFloat> ("treble", "Treble", 7000.0f, 16500.0f, 13000.0f)
               std::make_unique<juce::AudioParameterFloat> ("treble", "Treble", 500.0f, 16500.0f, 13000.0f)

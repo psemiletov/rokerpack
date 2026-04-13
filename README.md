@@ -2,7 +2,7 @@
 
 **ROKER PACK** — a set of guitar VST3 plugins for both Linux and Windows.
 
-## GUITAR PEDALS
+## GUITAR EFFECTS/TOOLS
 
 Guitar pedal effects from Bedroom Studio ARE NOT emulation of famous Boss DS-1, Boss Overdrive or Ibanez Tube Screamer. My effort is to create its own, specific sound, although it can be designed after hardware analogs. As VST3 plugins, you can use them in your preferred DAW: Ardour, Reaper, Muse, Cubase and others.
 
