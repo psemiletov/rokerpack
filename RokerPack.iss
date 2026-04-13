@@ -18,80 +18,27 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
 ArchitecturesInstallIn64BitMode=x64
-LicenseFile=LICENSE
 
 ; Отключаем все лишние страницы мастера
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 DisableReadyPage=yes
 DisableFinishedPage=no
+DisableLicensePage=yes
 
 ; Отключаем диалог выбора языка
 ShowLanguageDialog=no
 
-[Languages]
-Name: "en"; MessagesFile: "compiler:Default.isl"
-Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"
-
 [CustomMessages]
-en.OpenFolder=Open plugins folder
-ru.OpenFolder=Открыть папку с плагинами
-en.Installing=Installing RokerPack plugins...
-ru.Installing=Установка плагинов RokerPack...
-en.Finished=Setup has finished installing RokerPack plugins on your computer.
-ru.Finished=Программа установки завершила установку плагинов RokerPack на ваш компьютер.
+OpenFolder=Open plugins folder
+Installing=Installing RokerPack plugins...
+Finished=Installation of RokerPack plugins is complete.
 
 [Code]
-var
-  LanguageCode: string;
-
-function GetSystemLanguageCode: string;
-var
-  Lang: string;
-begin
-  Lang := ActiveLanguage;
-  { Определяем язык системы через GetUserDefaultLangID }
-  case GetUserDefaultLangID of
-    $0419, $0419: Result := 'ru';  { Русский }
-  else
-    Result := 'en';
-  end;
-end;
-
-function ShouldSkipPage(PageID: Integer): Boolean;
-begin
-  Result := False;
-  { Пропускаем страницу выбора языка }
-  if PageID = wpSelectLanguage then
-    Result := True;
-end;
-
 procedure InitializeWizard;
-var
-  SelectedLanguage: string;
-  SysLang: string;
 begin
-  { Определяем язык системы }
-  case GetUserDefaultLangID of
-    $0419, $0419: SysLang := 'ru';  { Русский }
-  else
-    SysLang := 'en';
-  end;
-  
-  { Выбираем язык интерфейса автоматически }
-  if SysLang = 'ru' then
-    SelectedLanguage := 'Russian'
-  else
-    SelectedLanguage := 'English';
-  
-  { Устанавливаем выбранный язык }
-  ActiveLanguage := SelectedLanguage;
-  
-  { Сохраняем код языка для дальнейшего использования }
-  if SysLang = 'ru' then
-    LanguageCode := 'ru'
-  else
-    LanguageCode := 'en';
+  { Настраиваем текст на странице завершения }
+  WizardForm.FinishedLabel.Caption := CustomMessage('Finished');
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
@@ -104,12 +51,6 @@ begin
     { Отключаем чекбокс "Запустить программу" }
     WizardForm.RunCheckBox.Visible := False;
     WizardForm.RunLabel.Visible := False;
-    
-    { Настраиваем финальное сообщение }
-    if LanguageCode = 'ru' then
-      WizardForm.FinishedLabel.Caption := 'Установка плагинов RokerPack завершена.'
-    else
-      WizardForm.FinishedLabel.Caption := 'Installation of RokerPack plugins is complete.';
   end;
 end;
 
