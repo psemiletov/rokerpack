@@ -69,3 +69,13 @@ mkdir build && cd build
 cmake ..
 make
 sudo make install
+
+## Support the Project
+
+If you find ROKER PACK useful, you can support further development:
+
+**PayPal:** peter.semiletov@gmail.com
+
+**Bitcoin:** bc1qpdjzcedha54rpaa3nl5q0xh3hmz2sfcx49z99w
+
+Your support is greatly appreciated! 🙌
