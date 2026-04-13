@@ -46,52 +46,31 @@ jobs:
           }
         }
         
+        Write-Host "=== Files in InstallerFiles ==="
         Get-ChildItem -Path InstallerFiles
 
-    - name: Create Inno Setup script
-      shell: pwsh
+    - name: Generate dynamic [Files] section
       run: |
-        $script = @'
-        ; RokerPack Installer
-        ; Inno Setup Script for RokerPack VST3 Plugins
-
-        [Setup]
-        AppId=RokerPack
-        AppName=RokerPack
-        AppVersion=1.0.0
-        AppPublisher=Semiletov
-        AppPublisherURL=https://github.com/psemiletov/rokerpack
-        AppSupportURL=https://github.com/psemiletov/rokerpack
-        AppUpdatesURL=https://github.com/psemiletov/rokerpack
-        DefaultDirName={commoncf64}\VST3
-        DefaultGroupName=RokerPack
-        LicenseFile=LICENSE
-        OutputDir=.
-        OutputBaseFilename=RokerPack-Setup
-        Compression=lzma2
-        SolidCompression=yes
-        WizardStyle=modern
-        PrivilegesRequired=admin
-        ArchitecturesInstallIn64BitMode=x64
-
-        [Files]
-        '@
-
-        $plugins = $env:PLUGINS.Split(' ')
-        foreach ($plugin in $plugins) {
-          $script += "Source: `"InstallerFiles\$plugin.vst3`"; DestDir: `"{app}`"; Flags: recursesubdirs`n"
+        # Копируем базовый скрипт
+        Copy-Item "RokerPack.iss" "RokerPack.temp.iss" -Force
+        
+        # Создаём временный файл с секцией Files
+        $filesSection = @()
+        $filesSection += "[Files]"
+        
+        foreach ($plugin in $env:PLUGINS.Split(' ')) {
+          $filesSection += "Source: `"InstallerFiles\$plugin.vst3`"; DestDir: `"{app}`"; Flags: recursesubdirs"
         }
-
-        $script += @'
-
-        [Icons]
-        Name: "{group}\Uninstall RokerPack"; Filename: "{uninstallexe}"
-
-        [Run]
-        Filename: "{app}\"
-        '@
-
-        $script | Out-File -FilePath "RokerPack.iss" -Encoding UTF8
+        
+        # Находим строку "[Files]" в оригинальном скрипте и заменяем
+        $content = Get-Content "RokerPack.temp.iss" -Raw
+        $newContent = $content -replace '(?m)^\[Files\]\s*$', ($filesSection -join "`r`n")
+        
+        # Сохраняем финальный скрипт
+        $newContent | Out-File "RokerPack.iss" -Encoding ASCII -Force
+        
+        Write-Host "=== Final RokerPack.iss ==="
+        Get-Content "RokerPack.iss"
 
     - name: Build installer with Inno Setup
       run: |
