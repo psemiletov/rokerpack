@@ -25,29 +25,11 @@ DisableProgramGroupPage=yes
 DisableReadyPage=yes
 DisableFinishedPage=no
 
-; Убираем все диалоги
+; Отключаем диалог выбора языка
 ShowLanguageDialog=no
 
 [CustomMessages]
-OpenFolder=Open plugins folder
-Installing=Installing RokerPack plugins...
 Finished=Installation of RokerPack plugins is complete.
-
-[Code]
-procedure InitializeWizard;
-begin
-  WizardForm.FinishedLabel.Caption := CustomMessage('Finished');
-end;
-
-procedure CurPageChanged(CurPageID: Integer);
-begin
-  if CurPageID = wpFinished then
-  begin
-    WizardForm.RunList.Visible := False;
-    WizardForm.RunCheckBox.Visible := False;
-    WizardForm.RunLabel.Visible := False;
-  end;
-end;
 
 [Dirs]
 Name: "{app}"
