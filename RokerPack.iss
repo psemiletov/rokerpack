@@ -26,7 +26,7 @@ DisableProgramGroupPage=yes
 DisableReadyPage=yes
 DisableFinishedPage=no
 
-; Настройки для бесшумной установки
+; Отключаем диалог выбора языка
 ShowLanguageDialog=no
 
 [Languages]
@@ -49,11 +49,13 @@ function GetSystemLanguageCode: string;
 var
   Lang: string;
 begin
-  Lang := GetSystemLanguage;
-  if Copy(Lang, 1, 2) = 'ru' then
-    Result := 'ru'
+  Lang := ActiveLanguage;
+  { Определяем язык системы через GetUserDefaultLangID }
+  case GetUserDefaultLangID of
+    $0419, $0419: Result := 'ru';  { Русский }
   else
     Result := 'en';
+  end;
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
@@ -67,18 +69,29 @@ end;
 procedure InitializeWizard;
 var
   SelectedLanguage: string;
+  SysLang: string;
 begin
   { Определяем язык системы }
-  LanguageCode := GetSystemLanguageCode;
+  case GetUserDefaultLangID of
+    $0419, $0419: SysLang := 'ru';  { Русский }
+  else
+    SysLang := 'en';
+  end;
   
   { Выбираем язык интерфейса автоматически }
-  if LanguageCode = 'ru' then
+  if SysLang = 'ru' then
     SelectedLanguage := 'Russian'
   else
     SelectedLanguage := 'English';
   
   { Устанавливаем выбранный язык }
   ActiveLanguage := SelectedLanguage;
+  
+  { Сохраняем код языка для дальнейшего использования }
+  if SysLang = 'ru' then
+    LanguageCode := 'ru'
+  else
+    LanguageCode := 'en';
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
