@@ -22,13 +22,9 @@ The hard and crisp distortion with five controls to customize the effect for you
 
 Old-fashioned flanger with warm sound.
 
-## OTHER FX
-
 ### Charm
 
 Simple, one-parameter saturator to add some warmth. BTW, it is built into Metalluga at the end of the chain.
-
-## TOOLS
 
 ### GuitarTuner
 
@@ -40,7 +36,6 @@ Tuner for bass guitar with note display, frequency readout, and fretboard visual
 
 ## Requirements
 
-- **Format:** VST3
 - **Host:** Any DAW that supports VST3 (Ardour, REAPER, Mixbus, Qtractor, Muse, Carla, Cakewalk, FL Studio, Studio One, etc.)
 - **Operating Systems:**
   - **Windows 7** and newer (64-bit)
