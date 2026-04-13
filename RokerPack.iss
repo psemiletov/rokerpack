@@ -24,9 +24,8 @@ DisableDirPage=yes
 DisableProgramGroupPage=yes
 DisableReadyPage=yes
 DisableFinishedPage=no
-DisableLicensePage=yes
 
-; Отключаем диалог выбора языка
+; Убираем все диалоги
 ShowLanguageDialog=no
 
 [CustomMessages]
@@ -37,18 +36,14 @@ Finished=Installation of RokerPack plugins is complete.
 [Code]
 procedure InitializeWizard;
 begin
-  { Настраиваем текст на странице завершения }
   WizardForm.FinishedLabel.Caption := CustomMessage('Finished');
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
-  { Настройка текста на странице завершения }
   if CurPageID = wpFinished then
   begin
-    { Отключаем сообщение о запуске приложения }
     WizardForm.RunList.Visible := False;
-    { Отключаем чекбокс "Запустить программу" }
     WizardForm.RunCheckBox.Visible := False;
     WizardForm.RunLabel.Visible := False;
   end;
@@ -61,7 +56,6 @@ Name: "{app}"
 ; Плагины будут добавлены автоматически
 
 [UninstallDelete]
-; Удаляем только папки плагинов, но не корневую VST3
 Type: filesandordirs; Name: "{app}\Bronza.vst3"
 Type: filesandordirs; Name: "{app}\Grelka.vst3"
 Type: filesandordirs; Name: "{app}\Metalluga.vst3"
