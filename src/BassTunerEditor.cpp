@@ -122,7 +122,7 @@ void BassTunerAudioEditor::updateUIFromProcessor()
     
     if (detectedFreq <= 0.0f)
     {
-        stringsPanel.resetLEDs();
+        stringsPanel.setActiveString(-1); //reset leds
     }
     else
     {

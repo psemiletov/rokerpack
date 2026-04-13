@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
-#include "Colors.h"
+
+constexpr int NUM_BASS_STRINGS = 4;
 
 class BassStringsPanel : public juce::Component
 {
@@ -9,10 +10,8 @@ public:
     ~BassStringsPanel() override;
 
     void setActiveString (int stringIndex);
-    void resetLEDs();
-
-protected:
-    void paint (juce::Graphics& g) override;
+    
+    void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
@@ -25,13 +24,12 @@ private:
         bool ledActive;
     };
     
-    void updateStringData();
-    
     std::vector<StringData> strings;
     int activeString;
     
-    static constexpr int leftLabelWidth = 70;
-    static constexpr int rightLEDSize = 16;
-    static constexpr int rowHeight = 55;
-    static constexpr int textOffset = 8;
+    const int textOffset = 8;
+    const int leftLabelWidth = 80;
+    const int rightLEDSize = 16;
+    
+    void updateStringData();
 };

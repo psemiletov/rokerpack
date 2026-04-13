@@ -1,4 +1,5 @@
 #include "BassStringsPanel.h"
+#include "Colors.h"  // ← добавить эту строку
 
 BassStringsPanel::BassStringsPanel()
     : activeString (-1)
@@ -20,17 +21,10 @@ void BassStringsPanel::setActiveString (int stringIndex)
     for (auto& s : strings)
         s.ledActive = false;
     
-    if (stringIndex >= 0 && stringIndex < 4)
+    if (stringIndex >= 0 && stringIndex < NUM_BASS_STRINGS)
         strings[stringIndex].ledActive = true;
     
     activeString = stringIndex;
-    repaint();
-}
-
-void BassStringsPanel::resetLEDs()
-{
-    for (auto& s : strings)
-        s.ledActive = false;
     repaint();
 }
 
@@ -41,7 +35,7 @@ void BassStringsPanel::paint (juce::Graphics& g)
     g.setColour (Colors::bgDark.withAlpha (0.7f));
     g.fillRect (bounds);
     
-    for (int i = 0; i < strings.size(); ++i)
+    for (int i = 0; i < NUM_BASS_STRINGS; ++i)
     {
         auto& str = strings[i];
         auto rowBounds = str.bounds;
@@ -107,10 +101,9 @@ void BassStringsPanel::resized()
 void BassStringsPanel::updateStringData()
 {
     auto bounds = getLocalBounds();
-    int numStrings = static_cast<int> (strings.size());
-    int rowHeightCalculated = bounds.getHeight() / numStrings;
+    int rowHeightCalculated = bounds.getHeight() / NUM_BASS_STRINGS;
     
-    for (int i = 0; i < numStrings; ++i)
+    for (int i = 0; i < NUM_BASS_STRINGS; ++i)
     {
         juce::Rectangle<float> rowBounds (
             0.0f,

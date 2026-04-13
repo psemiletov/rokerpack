@@ -1,6 +1,10 @@
 #pragma once
 #include <cmath>
 
+//based on https://webaudio.github.io/Audio-EQ-Cookbook/Audio-EQ-Cookbook.txt
+//Cookbook formulae for audio EQ biquad filter coefficients
+//
+
 class VintageEQ
 {
 public:
