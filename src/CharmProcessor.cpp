@@ -49,8 +49,8 @@ void CharmAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
             f = warmify(f, charmValue);
             
             // Soft clipping (как в оригинале warmify уже делает clipping)
-            if (f > 1.0f) f = 1.0f;
-            else if (f < -1.0f) f = -1.0f;
+           // if (f > 1.0f) f = 1.0f;
+            //else if (f < -1.0f) f = -1.0f;
             
             channelData[i] = f;
         }
