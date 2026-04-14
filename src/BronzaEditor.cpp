@@ -11,7 +11,7 @@ BronzaAudioEditor::BronzaAudioEditor (BronzaAudioProcessor& p)
     levelSlider.setRange (0.0f, 1.0f, 0.001f);
     levelSlider.setValue (audioProcessor.getLevelParam()->get(), juce::dontSendNotification);
     levelSlider.addListener (this);
-    levelSlider.setTextValueSuffix (" dB");
+    //levelSlider.setTextValueSuffix (" dB");
     levelSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
     addAndMakeVisible (levelSlider);
     
@@ -135,11 +135,11 @@ void BronzaAudioEditor::sliderValueChanged (juce::Slider* slider)
     if (slider == &levelSlider)
     {
         audioProcessor.getLevelParam()->setValueNotifyingHost ((float) levelSlider.getValue());
-        levelSlider.repaint();
+        //levelSlider.repaint();
     }
     else if (slider == &intensitySlider)
     {
         audioProcessor.getIntensityParam()->setValueNotifyingHost ((float) intensitySlider.getValue());
-        intensitySlider.repaint();
+        //intensitySlider.repaint();
     }
 }
