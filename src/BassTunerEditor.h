@@ -29,3 +29,6 @@ private:
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BassTunerAudioEditor)
 };
+
+static constexpr int DEFAULT_WIDTH = 720;
+static constexpr int DEFAULT_HEIGHT = 380;
