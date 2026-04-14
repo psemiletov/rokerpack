@@ -3,6 +3,8 @@
 #include <cmath>
 
 // Константы
+
+//constexpr int ANALYSIS_BLOCK_SIZE = 1024;   // Уменьшили с 4096 для экономии CPU
 constexpr int ANALYSIS_BLOCK_SIZE = 2048;   // Уменьшили с 4096 для экономии CPU
 //constexpr int ANALYSIS_BLOCK_SIZE = 4096; 
 constexpr float MAX_CENTS_DEVIATION = 50.0f;

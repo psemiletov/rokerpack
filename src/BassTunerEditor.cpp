@@ -15,7 +15,8 @@ BassTunerAudioEditor::BassTunerAudioEditor (BassTunerAudioProcessor& p)
     addAndMakeVisible (stringsPanel);
     
     setSize (DEFAULT_WIDTH, DEFAULT_HEIGHT);
-    startTimerHz (30);
+//    startTimerHz (30);
+   startTimerHz (30);
 }
 
 BassTunerAudioEditor::~BassTunerAudioEditor()
