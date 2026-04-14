@@ -60,13 +60,13 @@ addAndMakeVisible (trebleSlider);
     levelLabel.attachToComponent (&levelSlider, false);
     addAndMakeVisible (levelLabel);
     
-    lowsLabel.setText ("LOWS", juce::dontSendNotification);
+    lowsLabel.setText ("LOW CUT", juce::dontSendNotification);
     lowsLabel.setJustificationType (juce::Justification::centred);
     lowsLabel.setFont (juce::Font (14.0f, juce::Font::bold));
     lowsLabel.attachToComponent (&lowsSlider, false);
     addAndMakeVisible (lowsLabel);
     
-    trebleLabel.setText ("TREBLE", juce::dontSendNotification);
+    trebleLabel.setText ("HIGH CUT", juce::dontSendNotification);
     trebleLabel.setJustificationType (juce::Justification::centred);
     trebleLabel.setFont (juce::Font (14.0f, juce::Font::bold));
     trebleLabel.attachToComponent (&trebleSlider, false);

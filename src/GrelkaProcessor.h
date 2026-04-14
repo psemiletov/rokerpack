@@ -2,7 +2,7 @@
 
 #include <JuceHeader.h>
 #include "dsp.h"
-#include "SimpleFilter.h"  // Новый файл
+#include "SimpleFilter.h"  
 
 class GrelkaAudioProcessor : public juce::AudioProcessor
 {
