@@ -9,6 +9,7 @@ CharmAudioEditor::CharmAudioEditor (CharmAudioProcessor& p)
     charmSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
     charmSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
     charmSlider.setRange (0.0f, 1.0f, 0.001f);
+    charmSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ← ДОБАВИТЬ
     addAndMakeVisible (charmSlider);
     
     // Attachment
@@ -85,18 +86,18 @@ void CharmAudioEditor::paint (juce::Graphics& g)
                      juce::Justification::centredTop, 
                      1);
     
-  // === ПОДПИСЬ ===
-g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.8f));
-g.setFont (juce::Font (14.0f, juce::Font::italic));
-g.drawFittedText ("analog saturator by Peter Semiletov", 
-                 bounds.getX(), 
-                 titleArea.getY() + 45,
-                 bounds.getWidth(),
-                 20,
-                 juce::Justification::centredTop, 
-                 1);
+    // Подпись
+    g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.8f));
+    g.setFont (juce::Font (14.0f, juce::Font::italic));
+    g.drawFittedText ("analog saturator by Peter Semiletov", 
+                     bounds.getX(), 
+                     titleArea.getY() + 45,
+                     bounds.getWidth(),
+                     20,
+                     juce::Justification::centredTop, 
+                     1);
     
-    // Декоративная линия (опущена ниже)
+    // Декоративная линия
     g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.6f));
     g.drawLine (50.0f, 70.0f, (float)bounds.getWidth() - 50, 70.0f, 1.5f);
 }
@@ -104,9 +105,8 @@ g.drawFittedText ("analog saturator by Peter Semiletov",
 void CharmAudioEditor::resized()
 {
     auto area = getLocalBounds();
-    auto titleArea = area.removeFromTop (80);
+    area.removeFromTop (80);
     auto sliderArea = area.reduced (30, 25);
     
-    // Кноб занимает всю доступную область с отступами
     charmSlider.setBounds (sliderArea.reduced (15, 10));
 }
