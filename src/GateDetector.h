@@ -1,18 +1,20 @@
 #pragma once
 #include <JuceHeader.h>
+#include <atomic>
 
+// Need by GuitarTuner
 class GateDetector
 {
 public:
     GateDetector();
     
     void processBlock (const float* buffer, int numSamples);
-    bool isSignalPresent() const { return rmsDB > thresholdDB; }
-    void setThresholdDB (float thresholdDB) { this->thresholdDB = thresholdDB; }
+    bool isSignalPresent() const { return rmsDB.load() > thresholdDB; }
+    void setThresholdDB (float db) { thresholdDB = db; }
 
 private:
     float linearToDB (float linear);
     
     float thresholdDB;
-    float rmsDB;
+    std::atomic<float> rmsDB;  // ← atomic для потокобезопасности
 };

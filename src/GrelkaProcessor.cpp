@@ -89,9 +89,6 @@ void GrelkaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
             f = lpFilter.process(f);
             f = hpFilter.process(f);
             
-            if (f > 1.0f) f = 1.0f;
-            else if (f < -1.0f) f = -1.0f;
-            
             channelData[i] = f;
         }
     }

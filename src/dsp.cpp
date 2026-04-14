@@ -146,7 +146,7 @@ float warmify (float x, float warmth)
 
 /*************** FILTERS *******************/
 
-
+/*
 float hp_filter (float input, float samplerate, float fc)
 {
   // Рассчитываем константу времени T из частоты среза
@@ -166,7 +166,7 @@ float hp_filter (float input, float samplerate, float fc)
 
   return output;
 }
-
+*/
 
 /*************** MISC *******************/
 

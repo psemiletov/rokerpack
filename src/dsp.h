@@ -81,7 +81,7 @@ float warmify (float x, float warmth);
 
 /*************** FILTERS *******************/
 
-float hp_filter (float input, float samplerate, float fc);
+//float hp_filter (float input, float samplerate, float fc);
 
 
 /*************** MISC *******************/

@@ -23,10 +23,8 @@ void GateDetector::processBlock (const float* buffer, int numSamples)
     
     double rmsLinear = std::sqrt (sumSquares / static_cast<double> (numSamples));
     
-    if (rmsLinear <= 0.00001f)
-        rmsDB = -100.0f;
-    else
-        rmsDB = 20.0f * std::log10 (static_cast<float> (rmsLinear));
+    float newRMSDB = linearToDB (static_cast<float> (rmsLinear));
+    rmsDB = newRMSDB;
 }
 
 float GateDetector::linearToDB (float linear)
