@@ -1,7 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "PitchDetector.h"
+#include "BassPitchDetector.h"
 
 // Константа для количества струн (согласована с BassStringsPanel)
 
@@ -46,7 +46,7 @@ private:
     float calculateCents (float detectedFreq, float targetFreq) const;
     juce::String frequencyToNoteName (float frequency) const;
 
-    std::unique_ptr<PitchDetector> pitchDetector;
+    std::unique_ptr<BassPitchDetector> pitchDetector;
     
     double currentSampleRate;
     

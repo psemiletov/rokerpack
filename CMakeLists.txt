@@ -337,7 +337,7 @@ target_sources(BassTuner PRIVATE
   src/BassTunerEditor.cpp
   src/BassStringsPanel.cpp
   src/MeterPanel.cpp
-  src/PitchDetector.cpp
+  src/BassPitchDetector.cpp
   src/BronzaLookAndFeel.cpp
 )
 

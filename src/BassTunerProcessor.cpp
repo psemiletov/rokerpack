@@ -3,12 +3,11 @@
 #include <cmath>
 
 // Константы
-constexpr int ANALYSIS_BLOCK_SIZE = 4096;
+constexpr int ANALYSIS_BLOCK_SIZE = 2048;   // Уменьшили с 4096 для экономии CPU
+//constexpr int ANALYSIS_BLOCK_SIZE = 4096; 
 constexpr float MAX_CENTS_DEVIATION = 50.0f;
 constexpr int MIN_BASS_MIDI = 28;
 constexpr int MAX_BASS_MIDI = 55;
-//constexpr int NUM_BASS_STRINGS = 4;
-
 
 BassTunerAudioProcessor::BassTunerAudioProcessor()
     : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::mono(), true)
@@ -78,7 +77,9 @@ void BassTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 {
     currentSampleRate = sampleRate;
     
-    pitchDetector = std::make_unique<PitchDetector> (sampleRate, ANALYSIS_BLOCK_SIZE);
+    pitchDetector = std::make_unique<BassPitchDetector>();
+    pitchDetector->prepare (sampleRate, ANALYSIS_BLOCK_SIZE);
+    pitchDetector->setSilenceThreshold (0.005f);  // Чувствительность к тишине
     
     detectedFrequency.store (0.0f);
     targetFrequency.store (0.0f);
@@ -107,7 +108,8 @@ void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     {
         const float* channelData = buffer.getReadPointer (0);
         
-        float frequency = pitchDetector->getFrequency (channelData, numSamples);
+        // Используем быстрый детектор (автокорреляция вместо YIN)
+        float frequency = pitchDetector->processSamples (channelData, numSamples);
         
         if (frequency > 0.0f)
         {
