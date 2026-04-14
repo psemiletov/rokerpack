@@ -8,7 +8,7 @@ CharmAudioProcessor::CharmAudioProcessor()
            std::make_unique<juce::AudioParameterFloat> ("charm", "Charm", 0.0f, 1.0f, 0.50f)
        })
 {
-    apvts.state.setProperty ("charm", 0.50f, nullptr);
+//    apvts.state.setProperty ("charm", 0.50f, nullptr);
 }
 
 CharmAudioProcessor::~CharmAudioProcessor()
@@ -19,11 +19,11 @@ void CharmAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     this->sampleRate = (float) sampleRate;
     
-    if (!dBTableInitialized)
+  /*  if (!dBTableInitialized)
     {
         init_db();
         dBTableInitialized = true;
-    }
+    }*/
 }
 
 void CharmAudioProcessor::releaseResources()

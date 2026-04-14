@@ -35,7 +35,7 @@ public:
 
 private:
     float sampleRate = 44100.0f;
-    bool dBTableInitialized = false;
+  //  bool dBTableInitialized = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CharmAudioProcessor)
 };
