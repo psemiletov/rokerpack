@@ -2,17 +2,24 @@
 #include "BassTunerEditor.h"
 #include <cmath>
 
+// Константы
+constexpr int ANALYSIS_BLOCK_SIZE = 4096;
+constexpr float MAX_CENTS_DEVIATION = 50.0f;
+constexpr int MIN_BASS_MIDI = 28;
+constexpr int MAX_BASS_MIDI = 55;
+//constexpr int NUM_BASS_STRINGS = 4;
+
+
 BassTunerAudioProcessor::BassTunerAudioProcessor()
     : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::mono(), true)
                                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
     , currentSampleRate (44100.0)
-    , currentBlockSize (512)
     , detectedFrequency (0.0f)
     , targetFrequency (0.0f)
     , centsDeviation (0.0f)
+    , stringNumber (-1)
     , detectedNote ("--")
     , targetNote ("--")
-    , stringNumber (-1)
 {
 }
 
@@ -67,42 +74,21 @@ void BassTunerAudioProcessor::changeProgramName (int index, const juce::String& 
     (void) newName;
 }
 
-/*
 void BassTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
-    currentBlockSize = samplesPerBlock;
     
-    int analysisBlockSize = juce::jmin (2048, samplesPerBlock * 2);
-    pitchDetector = std::make_unique<PitchDetector> (sampleRate, analysisBlockSize);
+    pitchDetector = std::make_unique<PitchDetector> (sampleRate, ANALYSIS_BLOCK_SIZE);
     
-    detectedFrequency = 0.0f;
+    detectedFrequency.store (0.0f);
+    targetFrequency.store (0.0f);
+    centsDeviation.store (0.0f);
+    stringNumber.store (-1);
     
     {
         juce::ScopedLock lock (stringDataLock);
         detectedNote = "--";
         targetNote = "--";
-        stringNumber = -1;
-    }
-}
-*/
-
-void BassTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
-{
-    currentSampleRate = sampleRate;
-    currentBlockSize = samplesPerBlock;
-    
-    // Увеличиваем буфер для E1 (4096 сэмплов)
-    int analysisBlockSize = 4096;
-    pitchDetector = std::make_unique<PitchDetector> (sampleRate, analysisBlockSize);
-    
-    detectedFrequency = 0.0f;
-    
-    {
-        juce::ScopedLock lock (stringDataLock);
-        detectedNote = "--";
-        targetNote = "--";
-        stringNumber = -1;
     }
 }
 
@@ -125,17 +111,30 @@ void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         
         if (frequency > 0.0f)
         {
-            detectedFrequency = frequency;
+            detectedFrequency.store (frequency);
             
             int closestString = findClosestString (frequency);
             if (closestString >= 0)
             {
-                targetFrequency = STRINGS[closestString].frequency;
-                targetNote = STRINGS[closestString].noteName;
-                stringNumber = 4 - closestString;
+                targetFrequency.store (STRINGS[closestString].frequency);
+                
+                {
+                    juce::ScopedLock lock (stringDataLock);
+                    targetNote = STRINGS[closestString].noteName;
+                }
+                
+                stringNumber.store (NUM_BASS_STRINGS - closestString);
             }
             
-            centsDeviation = calculateCents (detectedFrequency, targetFrequency);
+            float targetFreq = targetFrequency.load();
+            if (targetFreq > 0.0f)
+            {
+                centsDeviation.store (calculateCents (frequency, targetFreq));
+            }
+            else
+            {
+                centsDeviation.store (0.0f);
+            }
             
             {
                 juce::ScopedLock lock (stringDataLock);
@@ -144,8 +143,8 @@ void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         }
         else
         {
-            detectedFrequency = 0.0f;
-            centsDeviation = 0.0f;
+            detectedFrequency.store (0.0f);
+            centsDeviation.store (0.0f);
             
             {
                 juce::ScopedLock lock (stringDataLock);
@@ -154,6 +153,7 @@ void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         }
     }
     
+    // Копируем входной сигнал в правый канал (если нужно стерео)
     if (buffer.getNumChannels() > 1)
     {
         buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
@@ -168,7 +168,7 @@ int BassTunerAudioProcessor::findClosestString (float frequency) const
     int closestIndex = 0;
     float minDiff = std::abs (frequency - STRINGS[0].frequency);
     
-    for (int i = 1; i < 4; ++i)
+    for (int i = 1; i < NUM_BASS_STRINGS; ++i)
     {
         float diff = std::abs (frequency - STRINGS[i].frequency);
         if (diff < minDiff)
@@ -189,7 +189,7 @@ float BassTunerAudioProcessor::calculateCents (float detectedFreq, float targetF
     float ratio = detectedFreq / targetFreq;
     float cents = 1200.0f * std::log2 (ratio);
     
-    return juce::jlimit (-50.0f, 50.0f, cents);
+    return juce::jlimit (-MAX_CENTS_DEVIATION, MAX_CENTS_DEVIATION, cents);
 }
 
 juce::String BassTunerAudioProcessor::frequencyToNoteName (float frequency) const
@@ -203,7 +203,7 @@ juce::String BassTunerAudioProcessor::frequencyToNoteName (float frequency) cons
     
     float midiFloat = A4_MIDI + SEMITONES_PER_OCTAVE * std::log2 (frequency / A4_FREQ);
     int midiNote = static_cast<int> (std::round (midiFloat));
-    midiNote = juce::jlimit (28, 55, midiNote);
+    midiNote = juce::jlimit (MIN_BASS_MIDI, MAX_BASS_MIDI, midiNote);
     
     const char* noteNames[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
     int octave = (midiNote / 12) - 1;

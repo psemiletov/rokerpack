@@ -3,6 +3,8 @@
 #include <JuceHeader.h>
 #include "PitchDetector.h"
 
+// Константа для количества струн (согласована с BassStringsPanel)
+
 class BassTunerAudioProcessor : public juce::AudioProcessor
 {
 public:
@@ -33,10 +35,11 @@ public:
     // Геттеры для UI
     float getDetectedFrequency() const { return detectedFrequency.load(); }
     float getTargetFrequency() const { return targetFrequency.load(); }
+    float getCentsDeviation() const { return centsDeviation.load(); }
+    
     juce::String getDetectedNote() const { juce::ScopedLock lock (stringDataLock); return detectedNote; }
     juce::String getTargetNote() const { juce::ScopedLock lock (stringDataLock); return targetNote; }
-    int getStringNumber() const { return stringNumber; }
-    float getCentsDeviation() const { return centsDeviation.load(); }
+    int getStringNumber() const { return stringNumber.load(); }
 
 private:
     int findClosestString (float frequency) const;
@@ -46,15 +49,14 @@ private:
     std::unique_ptr<PitchDetector> pitchDetector;
     
     double currentSampleRate;
-    int currentBlockSize;
     
     std::atomic<float> detectedFrequency;
     std::atomic<float> targetFrequency;
     std::atomic<float> centsDeviation;
+    std::atomic<int> stringNumber;  // ← теперь atomic
     
     juce::String detectedNote;
     juce::String targetNote;
-    int stringNumber;
     
     mutable juce::CriticalSection stringDataLock;
     
