@@ -12,12 +12,6 @@ MetallugaAudioProcessor::MetallugaAudioProcessor()
            std::make_unique<juce::AudioParameterFloat> ("warmth", "Warmth", 0.01f, 0.99f, 0.50f)
        })
 {
-    // Убедимся, что apvts state инициализирован
-    apvts.state.setProperty ("drive", 0.50f, nullptr);
-    apvts.state.setProperty ("level", 0.0f, nullptr);
-    apvts.state.setProperty ("weight", 0.68f, nullptr);
-    apvts.state.setProperty ("reso", 0.50f, nullptr);
-    apvts.state.setProperty ("warmth", 0.50f, nullptr);
 }
 
 MetallugaAudioProcessor::~MetallugaAudioProcessor()
@@ -56,14 +50,9 @@ void MetallugaAudioProcessor::releaseResources()
 
 void MetallugaAudioProcessor::updateParameters()
 {
-    // Получаем значения из apvts
     float weightValue = apvts.getRawParameterValue("weight")->load();
-    float resoValue = apvts.getRawParameterValue("reso")->load();
+    currentResoValue = apvts.getRawParameterValue("reso")->load();
     
-    // Отладка
-    std::cout << "updateParameters: weight=" << weightValue << ", reso=" << resoValue << std::endl;
-    
-    // Частота среза фильтров: 1 - weight
     float cutoff = 1.0f - weightValue;
     cutoff = juce::jlimit(0.01f, 0.99f, cutoff);
     
@@ -71,8 +60,8 @@ void MetallugaAudioProcessor::updateParameters()
     {
         lp[i].set_cutoff(cutoff);
         hp[i].set_cutoff(cutoff);
-        lp[i].set_resonance(resoValue);
-        hp[i].set_resonance(resoValue);
+        lp[i].set_resonance(currentResoValue);
+        hp[i].set_resonance(currentResoValue);
     }
 }
 
@@ -80,21 +69,10 @@ void MetallugaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 {
     juce::ScopedNoDenormals noDenormals;
     
-    // Получаем параметры из apvts
     float driveValue = apvts.getRawParameterValue("drive")->load();
     float levelValue = apvts.getRawParameterValue("level")->load();
     float warmthValue = apvts.getRawParameterValue("warmth")->load();
     
-    // Отладка (один раз)
-    static bool logged = false;
-    if (!logged)
-    {
-        std::cout << "processBlock: drive=" << driveValue << ", level=" << levelValue 
-                  << ", warmth=" << warmthValue << std::endl;
-        logged = true;
-    }
-    
-    // Обновляем фильтры (параметры weight и reso)
     updateParameters();
     
     float levelLin = db2lin(levelValue);
@@ -112,21 +90,11 @@ void MetallugaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         {
             float f = channelData[i];
             
-            // Уровень применяется ДО искажения
             f *= levelLin;
-            
-            // Основное искажение
             f = gritty_guitar_distortion(f, driveValue);
-            
-            // Фильтрация
             f = lpFilter.process(f);
             f = hpFilter.process(f);
-            
-            // Резонанс (получаем свежее значение)
-            float resoValue = apvts.getRawParameterValue("reso")->load();
-            f = apply_resonance(f, resoValue);
-            
-            // Теплота
+            f = apply_resonance(f, currentResoValue);
             f = warmify(f, warmthValue);
             
             // Hard clipping

@@ -35,14 +35,14 @@ public:
     juce::AudioProcessorValueTreeState apvts;
 
 private:
+    void updateParameters();
+    
     float sampleRate = 44100.0f;
     bool dBTableInitialized = false;
+    float currentResoValue = 0.50f;  // ← добавили
 
-    // Фильтры для стерео
     CResoFilter lp[2];
     CResoFilter hp[2];
-
-    void updateParameters();
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MetallugaAudioProcessor)
 };
