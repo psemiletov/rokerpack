@@ -39,7 +39,7 @@ private:
     
     float sampleRate = 44100.0f;
     bool dBTableInitialized = false;
-    float currentResoValue = 0.50f;  // ← добавили
+    float currentAggroValue = 0.50f;  // ← было currentResoValue
 
     CResoFilter lp[2];
     CResoFilter hp[2];

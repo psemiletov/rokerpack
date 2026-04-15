@@ -5,43 +5,42 @@ MetallugaAudioEditor::MetallugaAudioEditor (MetallugaAudioProcessor& p)
 {
     setLookAndFeel (&metallugaLookAndFeel);
     
-// Drive
-driveSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-driveSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-driveSlider.setRange (0.0f, 1.0f, 0.001f);
-driveSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
-addAndMakeVisible (driveSlider);
-
-
-// Level — только положительный (0 до 62 dB)
-levelSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-levelSlider.setRange (0.0f, 62.0f, 0.1f);  // 0..62 dB
-levelSlider.setTextValueSuffix (" dB");
-levelSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
-addAndMakeVisible (levelSlider);
-
-// Weight
-weightSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-weightSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-weightSlider.setRange (0.01f, 0.99f, 0.001f);
-weightSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
-addAndMakeVisible (weightSlider);
-
-// Resonance
-resoSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-resoSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-resoSlider.setRange (0.01f, 0.99f, 0.001f);
-resoSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
-addAndMakeVisible (resoSlider);
-
-// Warmth
-warmthSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-warmthSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-warmthSlider.setRange (0.01f, 0.99f, 0.001f);
-warmthSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);  // ДОБАВИТЬ
-addAndMakeVisible (warmthSlider);
-
+    // Drive
+    driveSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+    driveSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+    driveSlider.setRange (0.0f, 1.0f, 0.001f);
+    driveSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
+    addAndMakeVisible (driveSlider);
+    
+    // Level (0..62 dB)
+    levelSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+    levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+    levelSlider.setRange (0.0f, 62.0f, 0.1f);
+    levelSlider.setTextValueSuffix (" dB");
+    levelSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
+    addAndMakeVisible (levelSlider);
+    
+    // Weight
+    weightSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+    weightSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+    weightSlider.setRange (0.01f, 0.99f, 0.001f);
+    weightSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
+    addAndMakeVisible (weightSlider);
+    
+    // Aggro (было Resonance)
+    aggroSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+    aggroSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+    aggroSlider.setRange (0.01f, 0.99f, 0.001f);
+    aggroSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
+    addAndMakeVisible (aggroSlider);
+    
+    // Warmth
+    warmthSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+    warmthSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+    warmthSlider.setRange (0.01f, 0.99f, 0.001f);
+    warmthSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
+    addAndMakeVisible (warmthSlider);
+    
     // Attachments
     driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.apvts, "drive", driveSlider);
@@ -49,8 +48,8 @@ addAndMakeVisible (warmthSlider);
         audioProcessor.apvts, "level", levelSlider);
     weightAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.apvts, "weight", weightSlider);
-    resoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.apvts, "reso", resoSlider);
+    aggroAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        audioProcessor.apvts, "aggro", aggroSlider);  // ← параметр теперь "aggro"
     warmthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.apvts, "warmth", warmthSlider);
     
@@ -73,11 +72,11 @@ addAndMakeVisible (warmthSlider);
     weightLabel.attachToComponent (&weightSlider, false);
     addAndMakeVisible (weightLabel);
     
-    resoLabel.setText ("RESO", juce::dontSendNotification);
-    resoLabel.setJustificationType (juce::Justification::centred);
-    resoLabel.setFont (juce::Font (12.0f, juce::Font::bold));
-    resoLabel.attachToComponent (&resoSlider, false);
-    addAndMakeVisible (resoLabel);
+    aggroLabel.setText ("AGGRO", juce::dontSendNotification);
+    aggroLabel.setJustificationType (juce::Justification::centred);
+    aggroLabel.setFont (juce::Font (12.0f, juce::Font::bold));
+    aggroLabel.attachToComponent (&aggroSlider, false);
+    addAndMakeVisible (aggroLabel);
     
     warmthLabel.setText ("WARMTH", juce::dontSendNotification);
     warmthLabel.setJustificationType (juce::Justification::centred);
@@ -85,7 +84,7 @@ addAndMakeVisible (warmthSlider);
     warmthLabel.attachToComponent (&warmthSlider, false);
     addAndMakeVisible (warmthLabel);
     
-    setSize (750, 370);
+    setSize (DEFAULT_WIDTH, DEFAULT_HEIGHT);
 }
 
 MetallugaAudioEditor::~MetallugaAudioEditor()
@@ -147,7 +146,7 @@ void MetallugaAudioEditor::paint (juce::Graphics& g)
                      juce::Justification::centredTop, 
                      1);
     
-    // === ПОДПИСЬ ===
+    // Подпись
     g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.8f));
     g.setFont (juce::Font (14.0f, juce::Font::italic));
     g.drawFittedText ("distortion by Peter Semiletov", 
@@ -158,7 +157,7 @@ void MetallugaAudioEditor::paint (juce::Graphics& g)
                      juce::Justification::centredTop, 
                      1);
     
-    // Декоративная линия (опущена ниже)
+    // Декоративная линия
     g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.6f));
     g.drawLine (50.0f, 70.0f, (float)bounds.getWidth() - 50, 70.0f, 1.5f);
 }
@@ -174,6 +173,6 @@ void MetallugaAudioEditor::resized()
     driveSlider.setBounds (sliderArea.removeFromLeft (sliderWidth).reduced (10, 10));
     levelSlider.setBounds (sliderArea.removeFromLeft (sliderWidth).reduced (10, 10));
     weightSlider.setBounds (sliderArea.removeFromLeft (sliderWidth).reduced (10, 10));
-    resoSlider.setBounds (sliderArea.removeFromLeft (sliderWidth).reduced (10, 10));
+    aggroSlider.setBounds (sliderArea.removeFromLeft (sliderWidth).reduced (10, 10));
     warmthSlider.setBounds (sliderArea.reduced (10, 10));
 }

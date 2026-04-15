@@ -8,7 +8,7 @@ MetallugaAudioProcessor::MetallugaAudioProcessor()
            std::make_unique<juce::AudioParameterFloat> ("drive", "Drive", 0.0f, 1.0f, 0.50f),
            std::make_unique<juce::AudioParameterFloat> ("level", "Level", 0.0f, 32.0f, 0.0f),
            std::make_unique<juce::AudioParameterFloat> ("weight", "Weight", 0.01f, 0.99f, 0.68f),
-           std::make_unique<juce::AudioParameterFloat> ("reso", "Resonance", 0.01f, 0.99f, 0.50f),
+           std::make_unique<juce::AudioParameterFloat> ("aggro", "Aggro", 0.01f, 0.99f, 0.50f),  // ← было "reso"
            std::make_unique<juce::AudioParameterFloat> ("warmth", "Warmth", 0.01f, 0.99f, 0.50f)
        })
 {
@@ -51,7 +51,7 @@ void MetallugaAudioProcessor::releaseResources()
 void MetallugaAudioProcessor::updateParameters()
 {
     float weightValue = apvts.getRawParameterValue("weight")->load();
-    currentResoValue = apvts.getRawParameterValue("reso")->load();
+    currentAggroValue = apvts.getRawParameterValue("aggro")->load();  // ← было "reso"
     
     float cutoff = 1.0f - weightValue;
     cutoff = juce::jlimit(0.01f, 0.99f, cutoff);
@@ -60,8 +60,8 @@ void MetallugaAudioProcessor::updateParameters()
     {
         lp[i].set_cutoff(cutoff);
         hp[i].set_cutoff(cutoff);
-        lp[i].set_resonance(currentResoValue);
-        hp[i].set_resonance(currentResoValue);
+        lp[i].set_resonance(currentAggroValue);
+        hp[i].set_resonance(currentAggroValue);
     }
 }
 
@@ -94,7 +94,7 @@ void MetallugaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
             f = gritty_guitar_distortion(f, driveValue);
             f = lpFilter.process(f);
             f = hpFilter.process(f);
-            f = apply_resonance(f, currentResoValue);
+            f = apply_aggro (f, currentAggroValue);  // ← используем currentAggroValue
             f = warmify(f, warmthValue);
             
             // Hard clipping

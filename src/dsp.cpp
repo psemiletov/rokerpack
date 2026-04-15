@@ -194,7 +194,7 @@ float soft_limit (float input)
 
 
 
-float apply_resonance (float input, float resonance_amount)
+float apply_aggro (float input, float resonance_amount)
 {
   // Вычисляем коэффициент для изменения резонанса
   float resonance_factor = 1.0f + resonance_amount;
