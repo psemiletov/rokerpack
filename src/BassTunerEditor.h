@@ -31,4 +31,4 @@ private:
 };
 
 static constexpr int DEFAULT_WIDTH = 720;
-static constexpr int DEFAULT_HEIGHT = 380;
+static constexpr int DEFAULT_HEIGHT = 480;

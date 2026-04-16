@@ -88,7 +88,7 @@ void BassTunerAudioEditor::paint (juce::Graphics& g)
     g.setColour (Colors::brassMid.withAlpha (0.6f));
     g.drawLine (40.0f, 58.0f, (float)bounds.getWidth() - 40, 58.0f, 1.5f);
 }
-
+/*
 void BassTunerAudioEditor::resized()
 {
     auto bounds = getLocalBounds();
@@ -104,7 +104,23 @@ void BassTunerAudioEditor::resized()
     meterPanel.setBounds (leftArea);
     stringsPanel.setBounds (rightArea);
 }
+*/
 
+void BassTunerAudioEditor::resized()
+{
+    auto bounds = getLocalBounds();
+    bounds = bounds.reduced (10, 10);
+    bounds.removeFromTop (50);
+    
+    auto leftArea = bounds.removeFromLeft (bounds.getWidth() * 0.45f);
+    auto rightArea = bounds;
+    
+    leftArea = leftArea.reduced (5, 5);
+    rightArea = rightArea.reduced (5, 5);
+    
+    meterPanel.setBounds (leftArea);
+    stringsPanel.setBounds (rightArea);
+}
 void BassTunerAudioEditor::timerCallback()
 {
     float detectedFreq = audioProcessor.getDetectedFrequency();

@@ -21,8 +21,7 @@ public:
 
 private:
     void timerCallback() override;
-    void drawMeter (juce::Graphics& g, juce::Rectangle<int> area);
-    void drawNeedle (juce::Graphics& g, juce::Rectangle<int> area, float cents);
+    void drawVerticalMeter (juce::Graphics& g, juce::Rectangle<int> area);  // ← новое название
     
     float currentFrequency;
     float currentTargetFrequency;
