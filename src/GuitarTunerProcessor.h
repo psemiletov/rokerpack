@@ -4,6 +4,9 @@
 #include "PitchDetector.h"
 #include "GateDetector.h"
 
+// Константы
+constexpr int NUM_GUITAR_STRINGS = 6;
+
 class GuitarTunerAudioProcessor : public juce::AudioProcessor
 {
 public:
@@ -13,6 +16,7 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void processBlock (juce::AudioBuffer<double>&, juce::MidiBuffer&) override;
 
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
@@ -32,35 +36,38 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     // Геттеры для UI
-    float getDetectedFrequency() const { return detectedFrequency.load(); }
+    float getDetectedFrequency() const { return smoothedFrequency.load(); }
     float getTargetFrequency() const { return targetFrequency.load(); }
     juce::String getDetectedNote() const { juce::ScopedLock lock (stringDataLock); return detectedNote; }
     juce::String getTargetNote() const { juce::ScopedLock lock (stringDataLock); return targetNote; }
-    int getStringNumber() const { return stringNumber; }
+    int getStringNumber() const { return stringNumber.load(); }
     float getCentsDeviation() const { return centsDeviation.load(); }
     bool isSignalActive() const { return signalActive.load(); }
 
 private:
-   
-   GateDetector gateDetector;
-   std::atomic<bool> signalActive;
-   
     int findClosestString (float frequency) const;
     float calculateCents (float detectedFreq, float targetFreq) const;
     juce::String frequencyToNoteName (float frequency) const;
 
     std::unique_ptr<PitchDetector> pitchDetector;
+    GateDetector gateDetector;
     
-    double currentSampleRate;
-    int currentBlockSize;
+    double currentSampleRate = 44100.0;
     
     std::atomic<float> detectedFrequency;
     std::atomic<float> targetFrequency;
     std::atomic<float> centsDeviation;
+    std::atomic<int> stringNumber;
+    std::atomic<bool> signalActive;
+    
+    // Сглаживание частоты для UI
+    std::atomic<float> smoothedFrequency;
+    float smoothingFactor = 0.25f;      // 0 = очень плавно, 1 = мгновенно
+    int silenceCounter = 0;
+    const int silenceTimeout = 10;      // ~0.3 секунды при 30 fps
     
     juce::String detectedNote;
     juce::String targetNote;
-    int stringNumber;
     
     mutable juce::CriticalSection stringDataLock;
     
@@ -70,12 +77,13 @@ private:
         const char* noteName;
     };
     
-    static constexpr StringInfo STRINGS[6] = {
-        { 82.41f,  "E2" },
-        { 110.00f, "A2" },
-        { 146.83f, "D3" },
-        { 196.00f, "G3" },
-        { 246.94f, "B3" },
-        { 329.63f, "E4" }
+    static constexpr int NUM_GUITAR_STRINGS = 6;
+    static constexpr StringInfo STRINGS[NUM_GUITAR_STRINGS] = {
+        { 82.41f,  "E2" },   // 6-я (самая толстая)
+        { 110.00f, "A2" },   // 5-я
+        { 146.83f, "D3" },   // 4-я
+        { 196.00f, "G3" },   // 3-я
+        { 246.94f, "B3" },   // 2-я
+        { 329.63f, "E4" }    // 1-я (самая тонкая)
     };
 };

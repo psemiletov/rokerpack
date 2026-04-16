@@ -2,17 +2,24 @@
 #include "GuitarTunerEditor.h"
 #include <cmath>
 
+// Константы
+constexpr int ANALYSIS_BLOCK_SIZE = 2048;
+constexpr float MAX_CENTS_DEVIATION = 50.0f;
+constexpr int MIN_GUITAR_MIDI = 40;
+constexpr int MAX_GUITAR_MIDI = 88;
+
 GuitarTunerAudioProcessor::GuitarTunerAudioProcessor()
     : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::mono(), true)
                                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
     , currentSampleRate (44100.0)
-    , currentBlockSize (512)
     , detectedFrequency (0.0f)
     , targetFrequency (0.0f)
     , centsDeviation (0.0f)
+    , stringNumber (-1)
+    , signalActive (false)
+    , smoothedFrequency (0.0f)
     , detectedNote ("--")
     , targetNote ("--")
-    , stringNumber (-1)
 {
 }
 
@@ -70,18 +77,21 @@ void GuitarTunerAudioProcessor::changeProgramName (int index, const juce::String
 void GuitarTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
-    currentBlockSize = samplesPerBlock;
     
-    int analysisBlockSize = juce::jmin (2048, samplesPerBlock * 2);
-    pitchDetector = std::make_unique<PitchDetector> (sampleRate, analysisBlockSize);
+    pitchDetector = std::make_unique<PitchDetector> (sampleRate, ANALYSIS_BLOCK_SIZE);
     
-    detectedFrequency = 0.0f;
+    detectedFrequency.store (0.0f);
+    targetFrequency.store (0.0f);
+    centsDeviation.store (0.0f);
+    stringNumber.store (-1);
+    signalActive.store (false);
+    smoothedFrequency.store (0.0f);
+    silenceCounter = 0;
     
     {
         juce::ScopedLock lock (stringDataLock);
         detectedNote = "--";
         targetNote = "--";
-        stringNumber = -1;
     }
 }
 
@@ -89,58 +99,11 @@ void GuitarTunerAudioProcessor::releaseResources()
 {
     pitchDetector.reset();
 }
-/*
-void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+
+void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages)
 {
-    juce::ScopedNoDenormals noDenormals;
-    
-    int numSamples = buffer.getNumSamples();
-    
-    if (numSamples > 0 && buffer.getNumChannels() > 0)
-    {
-        const float* channelData = buffer.getReadPointer (0);
-        
-        float frequency = pitchDetector->getFrequency (channelData, numSamples);
-        
-        if (frequency > 0.0f)
-        {
-            detectedFrequency = frequency;
-            
-            // Всегда автоматический режим: находим ближайшую струну
-            int closestString = findClosestString (frequency);
-            if (closestString >= 0)
-            {
-                targetFrequency = STRINGS[closestString].frequency;
-                targetNote = STRINGS[closestString].noteName;
-                stringNumber = 6 - closestString;
-            }
-            
-            centsDeviation = calculateCents (detectedFrequency, targetFrequency);
-            
-            {
-                juce::ScopedLock lock (stringDataLock);
-                detectedNote = frequencyToNoteName (frequency);
-            }
-        }
-        else
-        {
-            detectedFrequency = 0.0f;
-            centsDeviation = 0.0f;
-            
-            {
-                juce::ScopedLock lock (stringDataLock);
-                detectedNote = "--";
-            }
-        }
-    }
-    
-    // Пропускаем аудио без изменений
-    if (buffer.getNumChannels() > 1)
-    {
-        buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
-    }
+    juce::ignoreUnused(buffer, midiMessages);
 }
-*/
 
 void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
@@ -155,7 +118,7 @@ void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         // Проверяем наличие сигнала
         gateDetector.processBlock (channelData, numSamples);
         bool hasSignal = gateDetector.isSignalPresent();
-        signalActive = hasSignal;
+        signalActive.store (hasSignal);
         
         if (hasSignal)
         {
@@ -163,27 +126,55 @@ void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
             
             if (frequency > 0.0f)
             {
-                detectedFrequency = frequency;
+                // Сглаживание частоты для UI
+                silenceCounter = 0;
+                float currentSmoothed = smoothedFrequency.load();
                 
-                int closestString = findClosestString (frequency);
-                if (closestString >= 0)
+                if (currentSmoothed <= 0.0f)
                 {
-                    targetFrequency = STRINGS[closestString].frequency;
-                    targetNote = STRINGS[closestString].noteName;
-                    stringNumber = 6 - closestString;
+                    smoothedFrequency.store (frequency);
+                }
+                else
+                {
+                    float newSmoothed = currentSmoothed * (1.0f - smoothingFactor) + frequency * smoothingFactor;
+                    smoothedFrequency.store (newSmoothed);
                 }
                 
-                centsDeviation = calculateCents (detectedFrequency, targetFrequency);
+                float displayFreq = smoothedFrequency.load();
+                detectedFrequency.store (displayFreq);
+                
+                int closestString = findClosestString (displayFreq);
+                if (closestString >= 0)
+                {
+                    targetFrequency.store (STRINGS[closestString].frequency);
+                    
+                    {
+                        juce::ScopedLock lock (stringDataLock);
+                        targetNote = STRINGS[closestString].noteName;
+                    }
+                    
+                    stringNumber.store (NUM_GUITAR_STRINGS - closestString);
+                }
+                
+                float targetFreq = targetFrequency.load();
+                if (targetFreq > 0.0f)
+                {
+                    centsDeviation.store (calculateCents (displayFreq, targetFreq));
+                }
+                else
+                {
+                    centsDeviation.store (0.0f);
+                }
                 
                 {
                     juce::ScopedLock lock (stringDataLock);
-                    detectedNote = frequencyToNoteName (frequency);
+                    detectedNote = frequencyToNoteName (displayFreq);
                 }
             }
             else
             {
-                detectedFrequency = 0.0f;
-                centsDeviation = 0.0f;
+                detectedFrequency.store (0.0f);
+                centsDeviation.store (0.0f);
                 {
                     juce::ScopedLock lock (stringDataLock);
                     detectedNote = "--";
@@ -192,14 +183,27 @@ void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         }
         else
         {
-            // Нет сигнала — сбрасываем всё
-            detectedFrequency = 0.0f;
-            centsDeviation = 0.0f;
+            // Плавное затухание частоты при отсутствии сигнала
+            silenceCounter++;
+            if (silenceCounter > silenceTimeout)
+            {
+                float currentSmoothed = smoothedFrequency.load();
+                if (currentSmoothed > 0.0f)
+                {
+                    float newSmoothed = currentSmoothed * 0.92f;  // постепенное затухание
+                    if (newSmoothed < 0.5f)
+                        newSmoothed = 0.0f;
+                    smoothedFrequency.store (newSmoothed);
+                    detectedFrequency.store (newSmoothed);
+                }
+            }
+            
+            centsDeviation.store (0.0f);
             {
                 juce::ScopedLock lock (stringDataLock);
                 detectedNote = "--";
                 targetNote = "--";
-                stringNumber = -1;
+                stringNumber.store (-1);
             }
         }
     }
@@ -218,7 +222,7 @@ int GuitarTunerAudioProcessor::findClosestString (float frequency) const
     int closestIndex = 0;
     float minDiff = std::abs (frequency - STRINGS[0].frequency);
     
-    for (int i = 1; i < 6; ++i)
+    for (int i = 1; i < NUM_GUITAR_STRINGS; ++i)
     {
         float diff = std::abs (frequency - STRINGS[i].frequency);
         if (diff < minDiff)
@@ -239,7 +243,7 @@ float GuitarTunerAudioProcessor::calculateCents (float detectedFreq, float targe
     float ratio = detectedFreq / targetFreq;
     float cents = 1200.0f * std::log2 (ratio);
     
-    return juce::jlimit (-50.0f, 50.0f, cents);
+    return juce::jlimit (-MAX_CENTS_DEVIATION, MAX_CENTS_DEVIATION, cents);
 }
 
 juce::String GuitarTunerAudioProcessor::frequencyToNoteName (float frequency) const
@@ -253,7 +257,7 @@ juce::String GuitarTunerAudioProcessor::frequencyToNoteName (float frequency) co
     
     float midiFloat = A4_MIDI + SEMITONES_PER_OCTAVE * std::log2 (frequency / A4_FREQ);
     int midiNote = static_cast<int> (std::round (midiFloat));
-    midiNote = juce::jlimit (40, 88, midiNote);
+    midiNote = juce::jlimit (MIN_GUITAR_MIDI, MAX_GUITAR_MIDI, midiNote);
     
     const char* noteNames[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
     int octave = (midiNote / 12) - 1;
@@ -281,7 +285,7 @@ void GuitarTunerAudioProcessor::getStateInformation (juce::MemoryBlock& destData
 
 void GuitarTunerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // Восстанавливать нечего, всё в автоматическом режиме
+    // Восстанавливать нечего
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

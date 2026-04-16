@@ -4,6 +4,7 @@
 #include "BassPitchDetector.h"
 
 // Константа для количества струн (согласована с BassStringsPanel)
+//constexpr int NUM_BASS_STRINGS = 4;
 
 class BassTunerAudioProcessor : public juce::AudioProcessor
 {
@@ -12,12 +13,11 @@ public:
     ~BassTunerAudioProcessor() override;
 
     juce::AudioParameterFloat* getGateParam() const { return gateParam; }
-
-
     
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    void processBlock (juce::AudioBuffer<double>&, juce::MidiBuffer&) override;
 
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
@@ -37,7 +37,7 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     // Геттеры для UI
-    float getDetectedFrequency() const { return detectedFrequency.load(); }
+    float getDetectedFrequency() const { return smoothedFrequency.load(); }
     float getTargetFrequency() const { return targetFrequency.load(); }
     float getCentsDeviation() const { return centsDeviation.load(); }
     
@@ -52,16 +52,19 @@ private:
 
     std::unique_ptr<BassPitchDetector> pitchDetector;
     
-    double currentSampleRate;
+    double currentSampleRate = 44100.0;
     
-    std::atomic<float> detectedFrequency;
     std::atomic<float> targetFrequency;
     std::atomic<float> centsDeviation;
-    std::atomic<int> stringNumber;  // ← теперь atomic
+    std::atomic<int> stringNumber;
     
-    // В приватной секции, после других параметров:
-    juce::AudioParameterFloat* gateParam;
-
+    // Сглаживание частоты для UI
+    std::atomic<float> smoothedFrequency;
+    float smoothingFactor = 0.25f;      // 0 = очень плавно, 1 = мгновенно
+    int silenceCounter = 0;
+    const int silenceTimeout = 10;      // ~0.3 секунды при 30 fps
+    
+    juce::AudioParameterFloat* gateParam = nullptr;
     
     juce::String detectedNote;
     juce::String targetNote;
@@ -75,7 +78,8 @@ private:
     };
     
     // 4 струны бас-гитары (E1, A1, D2, G2)
-    static constexpr StringInfo STRINGS[4] = {
+    static constexpr int NUM_BASS_STRINGS = 4;
+    static constexpr StringInfo STRINGS[NUM_BASS_STRINGS] = {
         { 41.20f,  "E1" },   // 4-я (самая толстая)
         { 55.00f,  "A1" },   // 3-я
         { 73.42f,  "D2" },   // 2-я
