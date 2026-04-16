@@ -1,8 +1,6 @@
 #include "TembrProcessor.h"
 #include "TembrEditor.h"
 
-
-
 TembrAudioProcessor::TembrAudioProcessor()
      : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
@@ -11,10 +9,8 @@ TembrAudioProcessor::TembrAudioProcessor()
            std::make_unique<juce::AudioParameterFloat> ("treble", "Treble", -12.0f, 12.0f, 0.0f)
        })
 {
-    apvts.state.setProperty ("lows", 0.0f, nullptr);
-    apvts.state.setProperty ("treble", 0.0f, nullptr);
+    // apvts.state.setProperty — не нужно, удалил
 }
-
 
 TembrAudioProcessor::~TembrAudioProcessor()
 {
@@ -23,12 +19,9 @@ TembrAudioProcessor::~TembrAudioProcessor()
 void TembrAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     this->sampleRate = (float) sampleRate;
+    juce::ignoreUnused(samplesPerBlock);
     
-    if (!dBTableInitialized)
-    {
-        init_db();
-        dBTableInitialized = true;
-    }
+    // init_db() не нужен, удалил
     
     eqL.setSampleRate(this->sampleRate);
     eqR.setSampleRate(this->sampleRate);
@@ -43,6 +36,7 @@ void TembrAudioProcessor::releaseResources()
 void TembrAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
+    juce::ignoreUnused(midiMessages);
     
     float lowsValue = apvts.getRawParameterValue("lows")->load();
     float trebleValue = apvts.getRawParameterValue("treble")->load();
@@ -66,6 +60,7 @@ void TembrAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
             float f = channelData[i];
             f = eq.process(f);
             
+            // Безопасный клиппинг (на всякий случай)
             if (f > 1.0f) f = 1.0f;
             else if (f < -1.0f) f = -1.0f;
             

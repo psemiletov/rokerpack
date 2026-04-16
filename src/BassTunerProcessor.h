@@ -11,6 +11,10 @@ public:
     BassTunerAudioProcessor();
     ~BassTunerAudioProcessor() override;
 
+    juce::AudioParameterFloat* getGateParam() const { return gateParam; }
+
+
+    
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
@@ -54,6 +58,10 @@ private:
     std::atomic<float> targetFrequency;
     std::atomic<float> centsDeviation;
     std::atomic<int> stringNumber;  // ← теперь atomic
+    
+    // В приватной секции, после других параметров:
+    juce::AudioParameterFloat* gateParam;
+
     
     juce::String detectedNote;
     juce::String targetNote;

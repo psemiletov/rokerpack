@@ -6,14 +6,13 @@ BronzaAudioProcessor::BronzaAudioProcessor()
      : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
 {
-    // Создаём параметры в диапазоне 0..1, как в VST версии
+    // Создаём параметры
     levelParam = new juce::AudioParameterFloat ("level", "Level", 
                                                  juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f), 
-                                                 fLevel);
-    
+                                                 0.5f);
     intensityParam = new juce::AudioParameterFloat ("intensity", "Intensity",
                                                      juce::NormalisableRange<float> (0.001f, 1.0f, 0.001f),
-                                                     fIntensity);
+                                                     0.87f);
     
     addParameter (levelParam);
     addParameter (intensityParam);
@@ -27,6 +26,7 @@ BronzaAudioProcessor::~BronzaAudioProcessor()
 void BronzaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     this->sampleRate = (float) sampleRate;
+    juce::ignoreUnused(samplesPerBlock);
     
     // Инициализируем таблицу dB (один раз)
     if (!dBTableInitialized)
@@ -35,7 +35,7 @@ void BronzaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
         dBTableInitialized = true;
     }
     
-    // Инициализируем фильтры как в оригинальном setupProcessing
+    // Инициализируем фильтры
     for (int i = 0; i < 2; i++)
     {
         lp[i].set_cutoff(12000.0f / (float) sampleRate);
@@ -50,7 +50,6 @@ void BronzaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
 
 void BronzaAudioProcessor::releaseResources()
 {
-    // Сброс фильтров
     for (int i = 0; i < 2; i++)
     {
         lp[i].reset();
@@ -61,55 +60,40 @@ void BronzaAudioProcessor::releaseResources()
 void BronzaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
+    juce::ignoreUnused(midiMessages);
     
-    // Получаем параметры
-    fLevel = levelParam->get();
-    fIntensity = intensityParam->get();
+    float fLevel = levelParam->get();
+    float fIntensity = intensityParam->get();
     
-    // Предварительно вычисляем линейный уровень (0..1 -> 0..48 dB)
     float levelLin = db2lin(fLevel * 48.0f);
-    float intensity = fIntensity;
     
-    // Получаем каналы
     int numChannels = juce::jmin(2, buffer.getNumChannels());
     int numSamples = buffer.getNumSamples();
     
-    // Обработка для каждого канала
     for (int channel = 0; channel < numChannels; channel++)
     {
         float* channelData = buffer.getWritePointer(channel);
-        
-        // Получаем фильтры для этого канала (теперь это обычные объекты)
         CResoFilter& lpFilter = lp[channel];
         CResoFilter& hpFilter = hp[channel];
         
-        // Основной цикл обработки
         for (int i = 0; i < numSamples; i++)
         {
             float f = channelData[i];
             
-            // Jimi fuzz
-            f = jimi_fuzz(f, levelLin, intensity);
-            
-            // Фильтрация
+            f = jimi_fuzz(f, levelLin, fIntensity);
             f = lpFilter.process(f);
             f = hpFilter.process(f);
             
-            // Hard Clipping
-            if (f > 1.0f) 
-                f = 1.0f;
-            else if (f < -1.0f) 
-                f = -1.0f;
+         //   if (f > 1.0f) f = 1.0f;
+           // else if (f < -1.0f) f = -1.0f;
             
             channelData[i] = f;
         }
     }
 }
 
-// Перегрузка для double (чтобы убрать предупреждение)
 void BronzaAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages)
 {
-    // Просто игнорируем double-версию или можно сконвертировать во float
     juce::ignoreUnused(buffer, midiMessages);
 }
 
@@ -176,8 +160,8 @@ void BronzaAudioProcessor::changeProgramName (int index, const juce::String& new
 void BronzaAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     std::unique_ptr<juce::XmlElement> xml (new juce::XmlElement ("BronzaSettings"));
-    xml->setAttribute ("level", (double) fLevel);
-    xml->setAttribute ("intensity", (double) fIntensity);
+    xml->setAttribute ("level", (double) levelParam->get());
+    xml->setAttribute ("intensity", (double) intensityParam->get());
     copyXmlToBinary (*xml, destData);
 }
 
@@ -186,13 +170,11 @@ void BronzaAudioProcessor::setStateInformation (const void* data, int sizeInByte
     std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
     if (xml != nullptr && xml->hasTagName ("BronzaSettings"))
     {
-        fLevel = (float) xml->getDoubleAttribute ("level", 29.0f / 48.0f);
-        fIntensity = (float) xml->getDoubleAttribute ("intensity", 0.87f);
+        float level = (float) xml->getDoubleAttribute ("level", 0.5f);
+        float intensity = (float) xml->getDoubleAttribute ("intensity", 0.87f);
         
-        if (levelParam != nullptr)
-            levelParam->setValueNotifyingHost (fLevel);
-        if (intensityParam != nullptr)
-            intensityParam->setValueNotifyingHost (fIntensity);
+        levelParam->setValueNotifyingHost (level);
+        intensityParam->setValueNotifyingHost (intensity);
     }
 }
 

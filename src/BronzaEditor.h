@@ -4,7 +4,8 @@
 #include "BronzaProcessor.h"
 #include "BronzaLookAndFeel.h"
 
-class BronzaAudioEditor : public juce::AudioProcessorEditor, private juce::Slider::Listener
+class BronzaAudioEditor : public juce::AudioProcessorEditor,
+                          private juce::Slider::Listener
 {
 public:
     BronzaAudioEditor (BronzaAudioProcessor&);
@@ -12,10 +13,13 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    
+    static constexpr int DEFAULT_WIDTH = 400;
+    static constexpr int DEFAULT_HEIGHT = 370;
 
 private:
     void sliderValueChanged (juce::Slider* slider) override;
-
+    
     BronzaAudioProcessor& audioProcessor;
     
     juce::Slider levelSlider;

@@ -11,7 +11,6 @@ BronzaAudioEditor::BronzaAudioEditor (BronzaAudioProcessor& p)
     levelSlider.setRange (0.0f, 1.0f, 0.001f);
     levelSlider.setValue (audioProcessor.getLevelParam()->get(), juce::dontSendNotification);
     levelSlider.addListener (this);
-    //levelSlider.setTextValueSuffix (" dB");
     levelSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
     addAndMakeVisible (levelSlider);
     
@@ -37,7 +36,7 @@ BronzaAudioEditor::BronzaAudioEditor (BronzaAudioProcessor& p)
     intensityLabel.attachToComponent (&intensitySlider, false);
     addAndMakeVisible (intensityLabel);
     
-    setSize (400, 370);
+    setSize (DEFAULT_WIDTH, DEFAULT_HEIGHT);
 }
 
 BronzaAudioEditor::~BronzaAudioEditor()
@@ -101,7 +100,7 @@ void BronzaAudioEditor::paint (juce::Graphics& g)
                      juce::Justification::centredTop, 
                      1);
     
-    // === ПОДПИСЬ (шрифт 14 pt) ===
+    // === ПОДПИСЬ ===
     g.setColour (juce::Colour (0xFFC9A03D).withAlpha (0.8f));
     g.setFont (juce::Font (14.0f, juce::Font::italic));
     g.drawFittedText ("fuzz by Peter Semiletov", 
@@ -135,11 +134,9 @@ void BronzaAudioEditor::sliderValueChanged (juce::Slider* slider)
     if (slider == &levelSlider)
     {
         audioProcessor.getLevelParam()->setValueNotifyingHost ((float) levelSlider.getValue());
-        //levelSlider.repaint();
     }
     else if (slider == &intensitySlider)
     {
         audioProcessor.getIntensityParam()->setValueNotifyingHost ((float) intensitySlider.getValue());
-        //intensitySlider.repaint();
     }
 }
