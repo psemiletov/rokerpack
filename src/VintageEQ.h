@@ -1,9 +1,9 @@
 #pragma once
+#include <JuceHeader.h>
 #include <cmath>
 
-//based on https://webaudio.github.io/Audio-EQ-Cookbook/Audio-EQ-Cookbook.txt
-//Cookbook formulae for audio EQ biquad filter coefficients
-//
+// Based on https://webaudio.github.io/Audio-EQ-Cookbook/Audio-EQ-Cookbook.txt
+// Cookbook formulae for audio EQ biquad filter coefficients
 
 class VintageEQ
 {
@@ -63,21 +63,19 @@ public:
 private:
     void updateLowCoeffs()
     {
-        // Low shelf filter at 100 Hz, Q=0.7
-       // float w0 = 2.0f * float(M_PI) * 100.0f / float(sampleRate);
-       
-        float w0 = 2.0f * float(M_PI) * 120.0f / float(sampleRate);
+        constexpr float pi = juce::MathConstants<float>::pi;
+        float w0 = 2.0f * pi * 120.0f / static_cast<float>(sampleRate);
         
-        float A = pow(10.0f, lowsGain / 40.0f);
-        float alpha = sin(w0) / (2.0f * 0.7f);
-        float cosw0 = cos(w0);
+        float A = std::pow(10.0f, lowsGain / 40.0f);
+        float alpha = std::sin(w0) / (2.0f * 0.7f);
+        float cosw0 = std::cos(w0);
         
-        float b0 = A * ((A + 1) - (A - 1) * cosw0 + 2 * sqrt(A) * alpha);
+        float b0 = A * ((A + 1) - (A - 1) * cosw0 + 2 * std::sqrt(A) * alpha);
         float b1 = 2 * A * ((A - 1) - (A + 1) * cosw0);
-        float b2 = A * ((A + 1) - (A - 1) * cosw0 - 2 * sqrt(A) * alpha);
-        float a0 = (A + 1) + (A - 1) * cosw0 + 2 * sqrt(A) * alpha;
+        float b2 = A * ((A + 1) - (A - 1) * cosw0 - 2 * std::sqrt(A) * alpha);
+        float a0 = (A + 1) + (A - 1) * cosw0 + 2 * std::sqrt(A) * alpha;
         float a1 = -2 * ((A - 1) + (A + 1) * cosw0);
-        float a2 = (A + 1) + (A - 1) * cosw0 - 2 * sqrt(A) * alpha;
+        float a2 = (A + 1) + (A - 1) * cosw0 - 2 * std::sqrt(A) * alpha;
         
         lowB0 = b0 / a0;
         lowB1 = b1 / a0;
@@ -88,35 +86,26 @@ private:
     
     void updateHighCoeffs()
     {
-        // High shelf filter at 10 kHz, Q=0.7
-        float w0 = 2.0f * float(M_PI) * 4000.0f / float(sampleRate);
+        constexpr float pi = juce::MathConstants<float>::pi;
+        float w0 = 2.0f * pi * 4000.0f / static_cast<float>(sampleRate);
         
-        float A = pow(10.0f, trebleGain / 40.0f);
-        float alpha = sin(w0) / (2.0f * 0.7f);
-        float cosw0 = cos(w0);
+        float A = std::pow(10.0f, trebleGain / 40.0f);
+        float alpha = std::sin(w0) / (2.0f * 0.7f);
+        float cosw0 = std::cos(w0);
         
         // Правильные формулы для High Shelf (из RBJ Cookbook)
-        float b0 = A * ((A + 1) + (A - 1) * cosw0 + 2 * sqrt(A) * alpha);
+        float b0 = A * ((A + 1) + (A - 1) * cosw0 + 2 * std::sqrt(A) * alpha);
         float b1 = -2 * A * ((A - 1) + (A + 1) * cosw0);
-        float b2 = A * ((A + 1) + (A - 1) * cosw0 - 2 * sqrt(A) * alpha);
-        float a0 = (A + 1) - (A - 1) * cosw0 + 2 * sqrt(A) * alpha;
+        float b2 = A * ((A + 1) + (A - 1) * cosw0 - 2 * std::sqrt(A) * alpha);
+        float a0 = (A + 1) - (A - 1) * cosw0 + 2 * std::sqrt(A) * alpha;
         float a1 = 2 * ((A - 1) - (A + 1) * cosw0);
-        float a2 = (A + 1) - (A - 1) * cosw0 - 2 * sqrt(A) * alpha;
+        float a2 = (A + 1) - (A - 1) * cosw0 - 2 * std::sqrt(A) * alpha;
         
         highB0 = b0 / a0;
         highB1 = b1 / a0;
         highB2 = b2 / a0;
         highA1 = a1 / a0;
         highA2 = a2 / a0;
-        
-        // Отладка
-        static float lastGain = -999;
-        if (lastGain != trebleGain)
-        {
-        //    std::cout << "Treble gain: " << trebleGain << " dB, A: " << A << std::endl;
-          //  std::cout << "High shelf coeffs: b0=" << highB0 << ", b1=" << highB1 << ", b2=" << highB2 << std::endl;
-            lastGain = trebleGain;
-        }
     }
     
     double sampleRate = 44100.0;

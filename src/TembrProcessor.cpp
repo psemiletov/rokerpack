@@ -16,15 +16,15 @@ TembrAudioProcessor::~TembrAudioProcessor()
 {
 }
 
-void TembrAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void TembrAudioProcessor::prepareToPlay (double sRate, int samplesPerBlock)
 {
-    this->sampleRate = (float) sampleRate;
+    sampleRate = (float) sRate;
     juce::ignoreUnused(samplesPerBlock);
     
     // init_db() не нужен, удалил
     
-    eqL.setSampleRate(this->sampleRate);
-    eqR.setSampleRate(this->sampleRate);
+    eqL.setSampleRate(sampleRate);
+    eqR.setSampleRate(sampleRate);
     eqL.reset();
     eqR.reset();
 }

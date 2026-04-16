@@ -10,7 +10,7 @@ public:
     TembrAudioProcessor();
     ~TembrAudioProcessor() override;
 
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void prepareToPlay (double sRate, int samplesPerBlock) override;
     void releaseResources() override;
     void processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
     void processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages) override;
