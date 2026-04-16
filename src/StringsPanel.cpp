@@ -48,22 +48,26 @@ void StringsPanel::paint (juce::Graphics& g)
         auto& str = strings[i];
         auto rowBounds = str.bounds;
         
-        // Текстовая метка слева
+        // Текстовая метка слева — увеличенная ширина
         juce::String labelText = str.name + " " + juce::String (str.frequency, 2) + " Hz";
         g.setColour (Colors::textLight);
         g.setFont (juce::Font (14.0f, juce::Font::bold));
+        
+        // Увеличиваем ширину области для текста на 32 пикселя
+        int labelWidth = leftLabelWidth + 32;  // было leftLabelWidth, стало +32
         g.drawText (labelText,
                     rowBounds.getX() + textOffset,
                     rowBounds.getY(),
-                    leftLabelWidth - textOffset,
+                    labelWidth - textOffset,
                     rowBounds.getHeight(),
                     juce::Justification::centredLeft);
         
-        // Полоса струны
+        // Полоса струны — левая граница сдвинута вправо на увеличенную ширину метки
         juce::Rectangle<float> stringRect;
-        stringRect.setX (rowBounds.getX() + leftLabelWidth);
+        float stringStartX = rowBounds.getX() + labelWidth + 8.0f;  // ← сдвиг на новую ширину
+        stringRect.setX (stringStartX);
         stringRect.setY (rowBounds.getCentreY() - str.thickness * 0.5f);
-        stringRect.setWidth (rowBounds.getWidth() - leftLabelWidth - rightLEDSize - textOffset * 2);
+        stringRect.setWidth (rowBounds.getWidth() - (stringStartX - rowBounds.getX()) - rightLEDSize - textOffset * 2);
         stringRect.setHeight (static_cast<float> (str.thickness));
         
         juce::ColourGradient stringGradient (

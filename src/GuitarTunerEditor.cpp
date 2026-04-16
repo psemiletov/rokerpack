@@ -82,6 +82,28 @@ void GuitarTunerAudioEditor::paint (juce::Graphics& g)
     g.drawLine (40.0f, 58.0f, (float)bounds.getWidth() - 40, 58.0f, 1.5f);
 }
 
+
+void GuitarTunerAudioEditor::resized()
+{
+    auto bounds = getLocalBounds();
+    bounds = bounds.reduced (10, 10);
+    bounds.removeFromTop (50);
+    
+    // Было: left 55%, right 45%
+    // Стало: left 50%, right 50%
+    int halfWidth = bounds.getWidth() / 2;
+    
+    auto leftArea = bounds.removeFromLeft (halfWidth);
+    auto rightArea = bounds;  // оставшаяся половина
+    
+    leftArea = leftArea.reduced (5, 5);
+    rightArea = rightArea.reduced (5, 5);
+    
+    meterPanel.setBounds (leftArea);
+    stringsPanel.setBounds (rightArea);
+}
+
+/*
 void GuitarTunerAudioEditor::resized()
 {
     auto bounds = getLocalBounds();
@@ -97,6 +119,8 @@ void GuitarTunerAudioEditor::resized()
     meterPanel.setBounds (leftArea);
     stringsPanel.setBounds (rightArea);
 }
+
+*/
 
 void GuitarTunerAudioEditor::timerCallback()
 {
