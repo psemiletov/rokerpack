@@ -1,17 +1,30 @@
 #include "BassPitchDetector.h"
 
+// Определение частот струн бас-гитары
+const BassPitchDetector::StringInfo BassPitchDetector::STRINGS[BassPitchDetector::NUM_BASS_STRINGS] = {
+    { 41.20f,  "E1" },   // 4-я (самая толстая)
+    { 55.00f,  "A1" },   // 3-я
+    { 73.42f,  "D2" },   // 2-я
+    { 98.00f,  "G2" }    // 1-я (самая тонкая)
+};
+
 BassPitchDetector::BassPitchDetector()
     : sampleRate (44100.0)
     , blockSize (2048)
     , writePosition (0)
     , minLag (0)
     , maxLag (0)
-    , silenceThreshold (0.01f)
-    , minFreq (40.0f)
+    , silenceThreshold (0.008f)
+    , lastFrequency (0.0f)
+    , currentLevel (0.0f)
+    , minFreq (38.0f)
     , maxFreq (400.0f)
     , samplesSinceLastAnalysis (0)
     , analysisInterval (1024)
-    , lastFrequency (0.0f)
+    , stableFrequency (0.0f)
+    , stableFrames (0)
+    , silenceFrames (0)
+    , newStringFrames (0)
 {
 }
 
@@ -24,169 +37,273 @@ void BassPitchDetector::prepare (double newSampleRate, int newBlockSize)
     sampleRate = newSampleRate;
     blockSize = newBlockSize;
     
-    // Минимальный размер для баса (для E1)
     int minBlockSize = static_cast<int> (sampleRate / minFreq) * 2;
-    if (blockSize < minBlockSize)
-        blockSize = minBlockSize;
-    if (blockSize > 4096)
-        blockSize = 4096;
+    blockSize = std::max (newBlockSize, minBlockSize);
+    blockSize = std::min (blockSize, 4096);
     
     ringBuffer.clear();
-    ringBuffer.resize (blockSize * 2, 0.0f);
+    ringBuffer.resize (static_cast<size_t> (blockSize * 2), 0.0f);
     
     analysisBuffer.clear();
-    analysisBuffer.resize (blockSize, 0.0f);
+    analysisBuffer.resize (static_cast<size_t> (blockSize), 0.0f);
+    
+    nsdfBuffer.clear();
+    nsdfBuffer.resize (static_cast<size_t> (blockSize), 0.0f);
     
     minLag = static_cast<int> (sampleRate / maxFreq);
     maxLag = static_cast<int> (sampleRate / minFreq);
+    minLag = std::max (2, minLag);
+    maxLag = std::min (blockSize / 2, maxLag);
     
-    if (minLag < 20) minLag = 20;
-    if (maxLag > blockSize / 2) maxLag = blockSize / 2;
-    if (maxLag <= minLag) maxLag = minLag + 1;
-    
-    correlationBuffer.clear();
-    correlationBuffer.resize (maxLag - minLag + 1, 0.0f);
-    
-    // Анализируем примерно 30-40 раз в секунду
-//    analysisInterval = static_cast<int> (sampleRate / 35);
-    
-    analysisInterval = static_cast<int> (sampleRate / 20);
-   
-    if (analysisInterval < 512) analysisInterval = 512;
-    if (analysisInterval > 2048) analysisInterval = 2048;
+    analysisInterval = static_cast<int> (sampleRate / 30);
+    analysisInterval = std::max (512, std::min (2048, analysisInterval));
     
     writePosition = 0;
     samplesSinceLastAnalysis = 0;
     lastFrequency = 0.0f;
+    currentLevel = 0.0f;
+    stableFrequency = 0.0f;
+    stableFrames = 0;
+    silenceFrames = 0;
+    newStringFrames = 0;
 }
 
 void BassPitchDetector::reset()
 {
-    for (size_t i = 0; i < ringBuffer.size(); ++i)
-        ringBuffer[i] = 0.0f;
+    std::fill (ringBuffer.begin(), ringBuffer.end(), 0.0f);
     writePosition = 0;
     samplesSinceLastAnalysis = 0;
     lastFrequency = 0.0f;
+    currentLevel = 0.0f;
+    stableFrequency = 0.0f;
+    stableFrames = 0;
+    silenceFrames = 0;
+    newStringFrames = 0;
 }
+
+int BassPitchDetector::findClosestString (float frequency) const
+{
+    if (frequency <= 0.0f)
+        return -1;
+    
+    int closestIndex = 0;
+    float minDiff = std::abs (frequency - STRINGS[0].frequency);
+    
+    for (int i = 1; i < NUM_BASS_STRINGS; ++i)
+    {
+        float diff = std::abs (frequency - STRINGS[i].frequency);
+        if (diff < minDiff)
+        {
+            minDiff = diff;
+            closestIndex = i;
+        }
+    }
+    
+    return closestIndex;
+}
+
+float BassPitchDetector::parabolicInterpolation (const std::vector<float>& data, int index)
+{
+    float a = data[static_cast<size_t> (index - 1)];
+    float b = data[static_cast<size_t> (index)];
+    float c = data[static_cast<size_t> (index + 1)];
+    
+    float denominator = a - 2.0f * b + c;
+    if (std::abs (denominator) < 0.0001f)
+        return 0.0f;
+    
+    return 0.5f * (a - c) / denominator;
+}
+
+float BassPitchDetector::detectPitch (const std::vector<float>& buffer)
+{
+    for (int tau = minLag; tau <= maxLag; ++tau)
+    {
+        float numerator = 0.0f;
+        float denominator = 0.0f;
+        int limit = blockSize - tau;
+        
+        for (int i = 0; i < limit; ++i)
+        {
+            numerator += buffer[i] * buffer[i + tau];
+            denominator += buffer[i] * buffer[i] + buffer[i + tau] * buffer[i + tau];
+        }
+        
+        if (denominator > 0.0f)
+            nsdfBuffer[tau] = 2.0f * numerator / denominator;
+        else
+            nsdfBuffer[tau] = 0.0f;
+    }
+    
+    int bestLag = minLag;
+    float maxValue = nsdfBuffer[minLag];
+    
+    for (int tau = minLag + 1; tau <= maxLag; ++tau)
+    {
+        if (nsdfBuffer[tau] > maxValue)
+        {
+            maxValue = nsdfBuffer[tau];
+            bestLag = tau;
+        }
+    }
+    
+    if (maxValue < 0.45f)
+        return 0.0f;
+    
+    float interpolatedLag = static_cast<float> (bestLag);
+    if (bestLag > minLag && bestLag < maxLag)
+        interpolatedLag += parabolicInterpolation (nsdfBuffer, bestLag);
+    
+    if (interpolatedLag > 0.0f)
+    {
+        float frequency = static_cast<float> (sampleRate) / interpolatedLag;
+        
+        if (frequency < minFreq)
+            return 0.0f;
+        if (frequency > maxFreq)
+        {
+            float subFreq = frequency / 2.0f;
+            if (subFreq >= minFreq && subFreq <= maxFreq)
+                return subFreq;
+            return 0.0f;
+        }
+        
+        return frequency;
+    }
+    
+    return 0.0f;
+}
+
+
 
 float BassPitchDetector::processSamples (const float* buffer, int numSamples)
 {
     if (buffer == nullptr || numSamples <= 0)
         return lastFrequency.load();
     
-    // Копируем новые сэмплы в кольцевой буфер
     for (int i = 0; i < numSamples; ++i)
     {
-        ringBuffer[writePosition] = buffer[i];
+        ringBuffer[static_cast<size_t> (writePosition)] = buffer[i];
         ++writePosition;
-        if (writePosition >= (int)ringBuffer.size())
+        if (writePosition >= static_cast<int> (ringBuffer.size()))
             writePosition = 0;
     }
     
     samplesSinceLastAnalysis += numSamples;
     
-    // Анализируем только когда накопилось достаточно сэмплов
     if (samplesSinceLastAnalysis >= analysisInterval)
     {
         samplesSinceLastAnalysis = 0;
         
-        // Проверяем, достаточно ли данных в буфере
         if (writePosition < blockSize)
         {
-            int available = (int)ringBuffer.size() - writePosition;
+            int available = static_cast<int> (ringBuffer.size()) - writePosition;
             if (available < blockSize)
                 return lastFrequency.load();
         }
         
-        // Копируем блок для анализа
         int readPos = writePosition - blockSize;
         if (readPos < 0)
-            readPos += (int)ringBuffer.size();
+            readPos += static_cast<int> (ringBuffer.size());
         
         float maxAmplitude = 0.0f;
         for (int i = 0; i < blockSize; ++i)
         {
-            analysisBuffer[i] = ringBuffer[readPos];
-            float absVal = std::abs (analysisBuffer[i]);
+            analysisBuffer[static_cast<size_t> (i)] = ringBuffer[static_cast<size_t> (readPos)];
+            float absVal = std::abs (analysisBuffer[static_cast<size_t> (i)]);
             if (absVal > maxAmplitude)
                 maxAmplitude = absVal;
             ++readPos;
-            if (readPos >= (int)ringBuffer.size())
+            if (readPos >= static_cast<int> (ringBuffer.size()))
                 readPos = 0;
         }
         
+        currentLevel = maxAmplitude;
+        
+        // Тишина - сброс всего
         if (maxAmplitude < silenceThreshold)
         {
-            lastFrequency = 0.0f;
-            return 0.0f;
+            silenceFrames++;
+            if (silenceFrames > maxSilenceFrames)
+            {
+                stableFrequency = 0.0f;
+                lastFrequency = 0.0f;
+                stableFrames = 0;
+                newStringFrames = 0;
+            }
+            return lastFrequency.load();
         }
         
-        float frequency = detectPitch (analysisBuffer);
+        silenceFrames = 0;
         
-        if (frequency >= minFreq && frequency <= maxFreq)
-            lastFrequency = frequency;
+        float rawFrequency = detectPitch (analysisBuffer);
+        
+        if (rawFrequency <= 0.0f)
+            return lastFrequency.load();
+        
+        int closestStringIndex = findClosestString (rawFrequency);
+        
+        // Если нет стабильной частоты - инициализируем
+        if (stableFrequency <= 0.0f && closestStringIndex >= 0)
+        {
+            stableFrequency = rawFrequency;
+            lastFrequency = rawFrequency;
+            stableFrames = requiredStableFrames;
+            return lastFrequency.load();
+        }
+        
+        // Проверяем, нужно ли переключиться на другую струну
+        int currentStringIndex = findClosestString (stableFrequency);
+        bool isDifferentString = (closestStringIndex != currentStringIndex);
+        
+        if (isDifferentString)
+        {
+            // Другая струна - накапливаем подтверждения
+            newStringFrames++;
+            if (newStringFrames >= 3)
+            {
+                // Переключаемся
+                stableFrequency = rawFrequency;
+                lastFrequency = rawFrequency;
+                stableFrames = requiredStableFrames;
+                newStringFrames = 0;
+            }
+            else
+            {
+                // Пока не переключаемся, показываем старую частоту
+                lastFrequency = stableFrequency;
+            }
+            return lastFrequency.load();
+        }
+        
+        // Та же струна - сбрасываем счётчик новой струны
+        newStringFrames = 0;
+        
+        // Проверяем, стабильна ли частота
+        bool isStable = std::abs(rawFrequency - stableFrequency) < 7.0f;
+        
+        if (isStable)
+        {
+            stableFrames++;
+            if (stableFrames >= requiredStableFrames)
+            {
+                // Плавное обновление
+                stableFrequency = stableFrequency * 0.7f + rawFrequency * 0.3f;
+                lastFrequency = stableFrequency;
+                stableFrames = requiredStableFrames;
+            }
+            else
+            {
+                lastFrequency = stableFrequency;
+            }
+        }
         else
-            lastFrequency = 0.0f;
+        {
+            // Нестабильно - сбрасываем счётчик, но показываем старую частоту
+            stableFrames = 0;
+            lastFrequency = stableFrequency;
+        }
     }
     
     return lastFrequency.load();
-}
-
-float BassPitchDetector::detectPitch (const std::vector<float>& buffer)
-{
-    int lagRange = maxLag - minLag + 1;
-    float maxCorrelation = -1.0f;
-    int bestLag = minLag;
-    
-    for (int lag = minLag; lag <= maxLag; ++lag)
-    {
-        float sum = 0.0f;
-        int limit = blockSize - lag;
-        
-        for (int i = 0; i < limit; ++i)
-        {
-            sum += buffer[i] * buffer[i + lag];
-        }
-        
-        int idx = lag - minLag;
-        correlationBuffer[idx] = sum;
-        
-        if (sum > maxCorrelation)
-        {
-            maxCorrelation = sum;
-            bestLag = lag;
-        }
-    }
-    
-    int idx = bestLag - minLag;
-    float interpolatedLag = (float)bestLag;
-    
-    if (idx > 0 && idx < lagRange - 1)
-    {
-        float a = correlationBuffer[idx - 1];
-        float b = correlationBuffer[idx];
-        float c = correlationBuffer[idx + 1];
-        
-        float denominator = a - 2.0f * b + c;
-        if (denominator != 0.0f)
-            interpolatedLag += 0.5f * (a - c) / denominator;
-    }
-    
-    if (interpolatedLag > 0.0f)
-        return (float)(sampleRate / interpolatedLag);
-    
-    return 0.0f;
-}
-
-float BassPitchDetector::parabolicInterpolation (const std::vector<float>& data, int index)
-{
-    float a = data[index - 1];
-    float b = data[index];
-    float c = data[index + 1];
-    
-    float denominator = a - 2.0f * b + c;
-    if (denominator == 0.0f)
-        return 0.0f;
-    
-    return 0.5f * (a - c) / denominator;
 }

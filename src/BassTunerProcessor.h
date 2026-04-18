@@ -1,10 +1,10 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "BassPitchDetector.h"
+#include "SmartPitchDetector.h"
 
-// Константа для количества струн (согласована с BassStringsPanel)
-//constexpr int NUM_BASS_STRINGS = 4;
+// Константа для количества струн
+constexpr int NUM_BASS_STRINGS = 4;
 
 class BassTunerAudioProcessor : public juce::AudioProcessor
 {
@@ -12,8 +12,6 @@ public:
     BassTunerAudioProcessor();
     ~BassTunerAudioProcessor() override;
 
-    juce::AudioParameterFloat* getGateParam() const { return gateParam; }
-    
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
@@ -37,11 +35,10 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     // Геттеры для UI
-    float getDetectedFrequency() const { return smoothedFrequency.load(); }
+    float getDetectedFrequency() const { return pitchDetector->getCurrentFrequency(); }
     float getTargetFrequency() const { return targetFrequency.load(); }
     float getCentsDeviation() const { return centsDeviation.load(); }
-    
-    juce::String getDetectedNote() const { juce::ScopedLock lock (stringDataLock); return detectedNote; }
+    juce::String getDetectedNote() const { return pitchDetector->getCurrentNoteName(); }
     juce::String getTargetNote() const { juce::ScopedLock lock (stringDataLock); return targetNote; }
     int getStringNumber() const { return stringNumber.load(); }
 
@@ -50,21 +47,13 @@ private:
     float calculateCents (float detectedFreq, float targetFreq) const;
     juce::String frequencyToNoteName (float frequency) const;
 
-    std::unique_ptr<BassPitchDetector> pitchDetector;
+    std::unique_ptr<SmartPitchDetector> pitchDetector;
     
     double currentSampleRate = 44100.0;
     
     std::atomic<float> targetFrequency;
     std::atomic<float> centsDeviation;
     std::atomic<int> stringNumber;
-    
-    // Сглаживание частоты для UI
-    std::atomic<float> smoothedFrequency;
-    float smoothingFactor = 0.25f;      // 0 = очень плавно, 1 = мгновенно
-    int silenceCounter = 0;
-    const int silenceTimeout = 10;      // ~0.3 секунды при 30 fps
-    
-    juce::AudioParameterFloat* gateParam = nullptr;
     
     juce::String detectedNote;
     juce::String targetNote;
@@ -77,12 +66,10 @@ private:
         const char* noteName;
     };
     
-    // 4 струны бас-гитары (E1, A1, D2, G2)
-    static constexpr int NUM_BASS_STRINGS = 4;
     static constexpr StringInfo STRINGS[NUM_BASS_STRINGS] = {
-        { 41.20f,  "E1" },   // 4-я (самая толстая)
-        { 55.00f,  "A1" },   // 3-я
-        { 73.42f,  "D2" },   // 2-я
-        { 98.00f,  "G2" }    // 1-я (самая тонкая)
+        { 41.20f,  "E1" },
+        { 55.00f,  "A1" },
+        { 73.42f,  "D2" },
+        { 98.00f,  "G2" }
     };
 };

@@ -1,9 +1,9 @@
 #include "BassTunerProcessor.h"
 #include "BassTunerEditor.h"
 #include <cmath>
+#include <iostream>
 
 // Константы
-constexpr int ANALYSIS_BLOCK_SIZE = 4096;
 constexpr float MAX_CENTS_DEVIATION = 50.0f;
 constexpr int MIN_BASS_MIDI = 28;
 constexpr int MAX_BASS_MIDI = 55;
@@ -15,12 +15,9 @@ BassTunerAudioProcessor::BassTunerAudioProcessor()
     , targetFrequency (0.0f)
     , centsDeviation (0.0f)
     , stringNumber (-1)
-    , smoothedFrequency (0.0f)
     , detectedNote ("--")
     , targetNote ("--")
 {
-    gateParam = new juce::AudioParameterFloat ("gate", "Gate", 0.0f, 1.0f, 0.0f);
-    addParameter (gateParam);
 }
 
 BassTunerAudioProcessor::~BassTunerAudioProcessor()
@@ -78,122 +75,20 @@ void BassTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 {
     currentSampleRate = sampleRate;
     
-    pitchDetector = std::make_unique<BassPitchDetector>();
-    pitchDetector->prepare (sampleRate, ANALYSIS_BLOCK_SIZE);
-    pitchDetector->setSilenceThreshold (0.005f);
+    pitchDetector = std::make_unique<SmartPitchDetector>();
+    pitchDetector->prepare (sampleRate, samplesPerBlock);
     
     targetFrequency.store (0.0f);
-    centsDeviation.store (0.0f);
-    stringNumber.store (-1);
-    smoothedFrequency.store (0.0f);
-    silenceCounter = 0;
     
     {
         juce::ScopedLock lock (stringDataLock);
         detectedNote = "--";
-        targetNote = "--";
     }
 }
 
 void BassTunerAudioProcessor::releaseResources()
 {
     pitchDetector.reset();
-}
-
-void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
-{
-    juce::ScopedNoDenormals noDenormals;
-    
-    int numSamples = buffer.getNumSamples();
-    
-    if (numSamples > 0 && buffer.getNumChannels() > 0)
-    {
-        const float* channelData = buffer.getReadPointer (0);
-        
-        float frequency = pitchDetector->processSamples (channelData, numSamples);
-        
-        if (frequency > 0.0f)
-        {
-            // Сглаживание частоты для UI
-            silenceCounter = 0;
-            float currentSmoothed = smoothedFrequency.load();
-            
-            if (currentSmoothed <= 0.0f)
-            {
-                smoothedFrequency.store (frequency);
-            }
-            else
-            {
-                float newSmoothed = currentSmoothed * (1.0f - smoothingFactor) + frequency * smoothingFactor;
-                smoothedFrequency.store (newSmoothed);
-            }
-            
-            float displayFreq = smoothedFrequency.load();
-            
-            int closestString = findClosestString (displayFreq);
-            if (closestString >= 0)
-            {
-                targetFrequency.store (STRINGS[closestString].frequency);
-                
-                {
-                    juce::ScopedLock lock (stringDataLock);
-                    targetNote = STRINGS[closestString].noteName;
-                }
-                
-                stringNumber.store (NUM_BASS_STRINGS - closestString);
-            }
-            
-            float targetFreq = targetFrequency.load();
-            if (targetFreq > 0.0f)
-            {
-                centsDeviation.store (calculateCents (displayFreq, targetFreq));
-            }
-            else
-            {
-                centsDeviation.store (0.0f);
-            }
-            
-            {
-                juce::ScopedLock lock (stringDataLock);
-                detectedNote = frequencyToNoteName (displayFreq);
-            }
-        }
-        else
-        {
-            // Плавное затухание частоты при отсутствии сигнала
-            silenceCounter++;
-            if (silenceCounter > silenceTimeout)
-            {
-                float currentSmoothed = smoothedFrequency.load();
-                if (currentSmoothed > 0.0f)
-                {
-                    float newSmoothed = currentSmoothed * 0.92f;  // постепенное затухание
-                    if (newSmoothed < 0.5f)
-                        newSmoothed = 0.0f;
-                    smoothedFrequency.store (newSmoothed);
-                }
-            }
-            
-            centsDeviation.store (0.0f);
-            {
-                juce::ScopedLock lock (stringDataLock);
-                detectedNote = "--";
-                targetNote = "--";
-                stringNumber.store (-1);
-            }
-        }
-    }
-    
-    // Копируем входной сигнал в правый канал (если нужно стерео)
-    if (buffer.getNumChannels() > 1)
-    {
-        buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
-    }
-}
-
-void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages)
-{
-    juce::ignoreUnused(buffer, midiMessages);
 }
 
 int BassTunerAudioProcessor::findClosestString (float frequency) const
@@ -248,6 +143,71 @@ juce::String BassTunerAudioProcessor::frequencyToNoteName (float frequency) cons
     return juce::String (noteNames[noteIndex]) + juce::String (octave);
 }
 
+void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+{
+    juce::ScopedNoDenormals noDenormals;
+    
+    int numSamples = buffer.getNumSamples();
+    
+    if (numSamples > 0 && buffer.getNumChannels() > 0)
+    {
+        const float* channelData = buffer.getReadPointer (0);
+        
+        pitchDetector->processSamples (channelData, numSamples);
+        
+        if (pitchDetector->isNoteDetected())
+        {
+            float frequency = pitchDetector->getCurrentFrequency();
+            float confidence = pitchDetector->getConfidence();
+            
+            if (frequency > 0.0f && confidence > 0.5f)
+            {
+                int closestString = findClosestString (frequency);
+                if (closestString >= 0)
+                {
+                    float targetFreq = STRINGS[closestString].frequency;
+                    float cents = 1200.0f * std::log2 (frequency / targetFreq);
+                    
+                    targetFrequency.store (targetFreq);
+                    centsDeviation.store (cents);
+                    
+                    {
+                        juce::ScopedLock lock (stringDataLock);
+                        targetNote = STRINGS[closestString].noteName;
+                    }
+                    
+                    stringNumber.store (NUM_BASS_STRINGS - closestString);
+                    
+                    {
+                        juce::ScopedLock lock (stringDataLock);
+                        detectedNote = frequencyToNoteName (frequency);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Не обнуляем targetNote и stringNumber при тишине
+            {
+                juce::ScopedLock lock (stringDataLock);
+                detectedNote = "--";
+                // targetNote не обнуляем
+                // stringNumber не обнуляем
+            }
+        }
+    }
+    
+    if (buffer.getNumChannels() > 1)
+    {
+        buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
+    }
+}
+
+void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages)
+{
+    juce::ignoreUnused(buffer, midiMessages);
+}
+
 bool BassTunerAudioProcessor::hasEditor() const
 {
     return true;
@@ -267,7 +227,7 @@ void BassTunerAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 
 void BassTunerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // Восстанавливать нечего
+    juce::ignoreUnused(data, sizeInBytes);
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

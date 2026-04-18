@@ -21,7 +21,7 @@ void BassStringsPanel::setActiveString (int stringIndex)
     for (auto& s : strings)
         s.ledActive = false;
     
-    if (stringIndex >= 0 && stringIndex < NUM_BASS_STRINGS)
+    if (stringIndex >= 0 && stringIndex < 4)
         strings[stringIndex].ledActive = true;
     
     activeString = stringIndex;
@@ -35,7 +35,7 @@ void BassStringsPanel::paint (juce::Graphics& g)
     g.setColour (Colors::bgDark.withAlpha (0.7f));
     g.fillRect (bounds);
     
-    for (int i = 0; i < NUM_BASS_STRINGS; ++i)
+    for (int i = 0; i < 4; ++i)
     {
         auto& str = strings[i];
         auto rowBounds = str.bounds;
@@ -101,9 +101,9 @@ void BassStringsPanel::resized()
 void BassStringsPanel::updateStringData()
 {
     auto bounds = getLocalBounds();
-    int rowHeightCalculated = bounds.getHeight() / NUM_BASS_STRINGS;
+    int rowHeightCalculated = bounds.getHeight() / 4;
     
-    for (int i = 0; i < NUM_BASS_STRINGS; ++i)
+    for (int i = 0; i < 4; ++i)
     {
         juce::Rectangle<float> rowBounds (
             0.0f,
