@@ -2,7 +2,7 @@
 #include <JuceHeader.h>
 #include "GuitarTunerProcessor.h"
 #include "StringsPanel.h"
-#include "MeterPanel.h"
+#include "GuitarMeterPanel.h"
 #include "BronzaLookAndFeel.h"
 
 class GuitarTunerAudioEditor : public juce::AudioProcessorEditor,
@@ -21,7 +21,7 @@ private:
     
     GuitarTunerAudioProcessor& audioProcessor;
     
-    MeterPanel meterPanel;
+    GuitarMeterPanel meterPanel;
     StringsPanel stringsPanel;
     BronzaLookAndFeel bronzaLookAndFeel;
     

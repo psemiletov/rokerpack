@@ -293,7 +293,7 @@ target_sources(GuitarTuner PRIVATE
   src/GuitarTunerProcessor.cpp
   src/GuitarTunerEditor.cpp
   src/StringsPanel.cpp
-  src/MeterPanel.cpp
+  src/GuitarMeterPanel.cpp
   src/PitchDetector.cpp
   src/SmartPitchDetector.cpp
   src/GateDetector.cpp 
