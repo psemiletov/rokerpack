@@ -1,9 +1,9 @@
 #include "GuitarTunerProcessor.h"
 #include "GuitarTunerEditor.h"
 #include <cmath>
+#include <iostream>
 
 // Константы
-constexpr int ANALYSIS_BLOCK_SIZE = 2048;
 constexpr float MAX_CENTS_DEVIATION = 50.0f;
 constexpr int MIN_GUITAR_MIDI = 40;
 constexpr int MAX_GUITAR_MIDI = 88;
@@ -12,13 +12,10 @@ GuitarTunerAudioProcessor::GuitarTunerAudioProcessor()
     : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::mono(), true)
                                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
     , currentSampleRate (44100.0)
-    , detectedFrequency (0.0f)
     , targetFrequency (0.0f)
     , centsDeviation (0.0f)
     , stringNumber (-1)
     , signalActive (false)
-    , smoothedFrequency (0.0f)
-    , detectedNote ("--")
     , targetNote ("--")
 {
 }
@@ -78,140 +75,19 @@ void GuitarTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 {
     currentSampleRate = sampleRate;
     
-    pitchDetector = std::make_unique<PitchDetector> (sampleRate, ANALYSIS_BLOCK_SIZE);
+    pitchDetector = std::make_unique<SmartPitchDetector>();
+    pitchDetector->prepare (sampleRate, samplesPerBlock);
     
-    detectedFrequency.store (0.0f);
     targetFrequency.store (0.0f);
     centsDeviation.store (0.0f);
     stringNumber.store (-1);
     signalActive.store (false);
-    smoothedFrequency.store (0.0f);
-    silenceCounter = 0;
-    
-    {
-        juce::ScopedLock lock (stringDataLock);
-        detectedNote = "--";
-        targetNote = "--";
-    }
+    targetNote = "--";
 }
 
 void GuitarTunerAudioProcessor::releaseResources()
 {
     pitchDetector.reset();
-}
-
-void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages)
-{
-    juce::ignoreUnused(buffer, midiMessages);
-}
-
-void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
-{
-    juce::ScopedNoDenormals noDenormals;
-    
-    int numSamples = buffer.getNumSamples();
-    
-    if (numSamples > 0 && buffer.getNumChannels() > 0)
-    {
-        const float* channelData = buffer.getReadPointer (0);
-        
-        // Проверяем наличие сигнала
-        gateDetector.processBlock (channelData, numSamples);
-        bool hasSignal = gateDetector.isSignalPresent();
-        signalActive.store (hasSignal);
-        
-        if (hasSignal)
-        {
-            float frequency = pitchDetector->getFrequency (channelData, numSamples);
-            
-            if (frequency > 0.0f)
-            {
-                // Сглаживание частоты для UI
-                silenceCounter = 0;
-                float currentSmoothed = smoothedFrequency.load();
-                
-                if (currentSmoothed <= 0.0f)
-                {
-                    smoothedFrequency.store (frequency);
-                }
-                else
-                {
-                    float newSmoothed = currentSmoothed * (1.0f - smoothingFactor) + frequency * smoothingFactor;
-                    smoothedFrequency.store (newSmoothed);
-                }
-                
-                float displayFreq = smoothedFrequency.load();
-                detectedFrequency.store (displayFreq);
-                
-                int closestString = findClosestString (displayFreq);
-                if (closestString >= 0)
-                {
-                    targetFrequency.store (STRINGS[closestString].frequency);
-                    
-                    {
-                        juce::ScopedLock lock (stringDataLock);
-                        targetNote = STRINGS[closestString].noteName;
-                    }
-                    
-                    stringNumber.store (NUM_GUITAR_STRINGS - closestString);
-                }
-                
-                float targetFreq = targetFrequency.load();
-                if (targetFreq > 0.0f)
-                {
-                    centsDeviation.store (calculateCents (displayFreq, targetFreq));
-                }
-                else
-                {
-                    centsDeviation.store (0.0f);
-                }
-                
-                {
-                    juce::ScopedLock lock (stringDataLock);
-                    detectedNote = frequencyToNoteName (displayFreq);
-                }
-            }
-            else
-            {
-                detectedFrequency.store (0.0f);
-                centsDeviation.store (0.0f);
-                {
-                    juce::ScopedLock lock (stringDataLock);
-                    detectedNote = "--";
-                }
-            }
-        }
-        else
-        {
-            // Плавное затухание частоты при отсутствии сигнала
-            silenceCounter++;
-            if (silenceCounter > silenceTimeout)
-            {
-                float currentSmoothed = smoothedFrequency.load();
-                if (currentSmoothed > 0.0f)
-                {
-                    float newSmoothed = currentSmoothed * 0.92f;  // постепенное затухание
-                    if (newSmoothed < 0.5f)
-                        newSmoothed = 0.0f;
-                    smoothedFrequency.store (newSmoothed);
-                    detectedFrequency.store (newSmoothed);
-                }
-            }
-            
-            centsDeviation.store (0.0f);
-            {
-                juce::ScopedLock lock (stringDataLock);
-                detectedNote = "--";
-                targetNote = "--";
-                stringNumber.store (-1);
-            }
-        }
-    }
-    
-    if (buffer.getNumChannels() > 1)
-    {
-        buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
-    }
 }
 
 int GuitarTunerAudioProcessor::findClosestString (float frequency) const
@@ -264,6 +140,65 @@ juce::String GuitarTunerAudioProcessor::frequencyToNoteName (float frequency) co
     int noteIndex = midiNote % 12;
     
     return juce::String (noteNames[noteIndex]) + juce::String (octave);
+}
+
+void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+{
+    juce::ScopedNoDenormals noDenormals;
+    
+    int numSamples = buffer.getNumSamples();
+    
+    if (numSamples > 0 && buffer.getNumChannels() > 0)
+    {
+        const float* channelData = buffer.getReadPointer (0);
+        
+        // Проверяем наличие сигнала (gate)
+        gateDetector.processBlock (channelData, numSamples);
+        bool hasSignal = gateDetector.isSignalPresent();
+        signalActive.store (hasSignal);
+        
+        if (hasSignal)
+        {
+            pitchDetector->processSamples (channelData, numSamples);
+            
+            if (pitchDetector->isNoteDetected())
+            {
+                float frequency = pitchDetector->getCurrentFrequency();
+                float confidence = pitchDetector->getConfidence();
+                
+                if (frequency > 0.0f && confidence > 0.5f)
+                {
+                    int closestString = findClosestString (frequency);
+                    if (closestString >= 0)
+                    {
+                        float targetFreq = STRINGS[closestString].frequency;
+                        float cents = 1200.0f * std::log2 (frequency / targetFreq);
+                        
+                        targetFrequency.store (targetFreq);
+                        centsDeviation.store (cents);
+                        targetNote = STRINGS[closestString].noteName;
+                        stringNumber.store (NUM_GUITAR_STRINGS - closestString);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Нет сигнала — сбрасываем только detected, но не target
+            centsDeviation.store (0.0f);
+            signalActive.store (false);
+        }
+    }
+    
+    if (buffer.getNumChannels() > 1)
+    {
+        buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
+    }
+}
+
+void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages)
+{
+    juce::ignoreUnused(buffer, midiMessages);
 }
 
 bool GuitarTunerAudioProcessor::hasEditor() const

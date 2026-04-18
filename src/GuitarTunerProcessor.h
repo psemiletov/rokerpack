@@ -1,10 +1,10 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "PitchDetector.h"
+#include "SmartPitchDetector.h"  // ← изменить
 #include "GateDetector.h"
 
-// Константы
+// Константа для количества струн
 constexpr int NUM_GUITAR_STRINGS = 6;
 
 class GuitarTunerAudioProcessor : public juce::AudioProcessor
@@ -36,9 +36,9 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     // Геттеры для UI
-    float getDetectedFrequency() const { return smoothedFrequency.load(); }
+    float getDetectedFrequency() const { return pitchDetector->getCurrentFrequency(); }
     float getTargetFrequency() const { return targetFrequency.load(); }
-    juce::String getDetectedNote() const { juce::ScopedLock lock (stringDataLock); return detectedNote; }
+    juce::String getDetectedNote() const { return pitchDetector->getCurrentNoteName(); }
     juce::String getTargetNote() const { juce::ScopedLock lock (stringDataLock); return targetNote; }
     int getStringNumber() const { return stringNumber.load(); }
     float getCentsDeviation() const { return centsDeviation.load(); }
@@ -49,24 +49,16 @@ private:
     float calculateCents (float detectedFreq, float targetFreq) const;
     juce::String frequencyToNoteName (float frequency) const;
 
-    std::unique_ptr<PitchDetector> pitchDetector;
+    std::unique_ptr<SmartPitchDetector> pitchDetector;  // ← изменено
     GateDetector gateDetector;
     
     double currentSampleRate = 44100.0;
     
-    std::atomic<float> detectedFrequency;
     std::atomic<float> targetFrequency;
     std::atomic<float> centsDeviation;
     std::atomic<int> stringNumber;
     std::atomic<bool> signalActive;
     
-    // Сглаживание частоты для UI
-    std::atomic<float> smoothedFrequency;
-    float smoothingFactor = 0.25f;      // 0 = очень плавно, 1 = мгновенно
-    int silenceCounter = 0;
-    const int silenceTimeout = 10;      // ~0.3 секунды при 30 fps
-    
-    juce::String detectedNote;
     juce::String targetNote;
     
     mutable juce::CriticalSection stringDataLock;
@@ -77,7 +69,6 @@ private:
         const char* noteName;
     };
     
-    static constexpr int NUM_GUITAR_STRINGS = 6;
     static constexpr StringInfo STRINGS[NUM_GUITAR_STRINGS] = {
         { 82.41f,  "E2" },   // 6-я (самая толстая)
         { 110.00f, "A2" },   // 5-я
