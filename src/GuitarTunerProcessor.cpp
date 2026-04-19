@@ -75,7 +75,7 @@ void GuitarTunerAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
 {
     currentSampleRate = sampleRate;
     
-    pitchDetector = std::make_unique<SmartPitchDetector>();
+    pitchDetector = std::make_unique<GuitarPitchDetector>();
     pitchDetector->prepare (sampleRate, samplesPerBlock);
     
     targetFrequency.store (0.0f);

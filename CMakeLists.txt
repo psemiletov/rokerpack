@@ -295,7 +295,7 @@ target_sources(GuitarTuner PRIVATE
   src/StringsPanel.cpp
   src/GuitarMeterPanel.cpp
   src/PitchDetector.cpp
-  src/SmartPitchDetector.cpp
+  src/GuitarPitchDetector.cpp
   src/GateDetector.cpp 
   src/BronzaLookAndFeel.cpp
 )

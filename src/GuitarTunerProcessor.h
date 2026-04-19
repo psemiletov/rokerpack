@@ -1,7 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "SmartPitchDetector.h"  // ← изменить
+#include "GuitarPitchDetector.h"  // ← изменить
 #include "GateDetector.h"
 
 // Константа для количества струн
@@ -49,7 +49,7 @@ private:
     float calculateCents (float detectedFreq, float targetFreq) const;
     juce::String frequencyToNoteName (float frequency) const;
 
-    std::unique_ptr<SmartPitchDetector> pitchDetector;  // ← изменено
+    std::unique_ptr<GuitarPitchDetector> pitchDetector;  // ← изменено
     GateDetector gateDetector;
     
     double currentSampleRate = 44100.0;
