@@ -34,8 +34,7 @@ public:
     juce::AudioProcessorValueTreeState apvts;
 
 private:
-    float sampleRate = 44100.0f;
-  //  bool dBTableInitialized = false;
+    float sampleRate = 44100.0f; //default
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CharmAudioProcessor)
 };

@@ -63,29 +63,6 @@ float jimi_fuzz (float input_sample, float level, float distortion)
   return output_sample;
 }
 
-/*
-float fuzz (float input, float level, float intensity)
-{
-    float distorted = sin (input) + intensity * sin (input * 12.0f);
-
-    // Уровень выхода
-    distorted *= level;
-
-
-    if (distorted > 1.0f || distorted < -1.0f)
-       distorted /= 2;
-
-        // Ограничиваем выходное значение в диапазоне от -1 до 1
-    if (distorted > 1.0f) {
-        distorted = 1.0f;
-    } else if (distorted < -1.0f) {
-        distorted = -1.0f;
-    }
-
-
-   return distorted;
-}
-*/
 
 float overdrive (float input, float drive, float level)
 {
@@ -143,30 +120,6 @@ float warmify (float x, float warmth)
   return warm_x;
 }
 
-
-/*************** FILTERS *******************/
-
-/*
-float hp_filter (float input, float samplerate, float fc)
-{
-  // Рассчитываем константу времени T из частоты среза
-  float T = 1.0f / (2.0f * M_PI * fc);
-
-    // Рассчитываем коэффициент для фильтра
-  float alpha = T / (T + 1.0f);
-
-    // Инициализируем предыдущее значение (первоначальное условие)
-  static float prev_output = 0.0f;
-
-    // Применяем фильтр к входному сигналу
-  float output = alpha * (prev_output + input - prev_output);
-
-    // Обновляем предыдущее значение для следующего вызова
-  prev_output = output;
-
-  return output;
-}
-*/
 
 /*************** MISC *******************/
 
