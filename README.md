@@ -28,11 +28,15 @@ Simple, one-parameter saturator to add some warmth. BTW, it is built into Metall
 
 ### GuitarTuner
 
-Tuner for six-string guitar with note display, frequency readout, and fretboard visualization.
+Tuner for six-string guitar with note display, frequency readout, and fretboard visualization. 
+
+For best results with the tuner:
+- **Tune from high strings to low strings (E4 → E2)** — this eliminates residual vibrations.
+- **If tuning from low to high (E2 → E4), mute already tuned strings** with your hand before tuning the next string.
 
 ### BassTuner
 
-Tuner for bass guitar with note display, frequency readout, and fretboard visualization.
+Tuner for bass guitar with note display, frequency readout, and fretboard visualization. For best results, tune from the lowest string (E1) to the highest (G2).
 
 ## Requirements
 
