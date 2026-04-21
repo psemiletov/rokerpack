@@ -6,7 +6,8 @@
 #include "BronzaLookAndFeel.h"
 
 class GuitarTunerAudioEditor : public juce::AudioProcessorEditor,
-                               private juce::Timer
+                               private juce::Timer,
+                               private juce::Button::Listener
 {
 public:
     GuitarTunerAudioEditor (GuitarTunerAudioProcessor&);
@@ -18,6 +19,7 @@ public:
 private:
     void timerCallback() override;
     void updateUIFromProcessor();
+    void buttonClicked (juce::Button* button) override;
     
     GuitarTunerAudioProcessor& audioProcessor;
     
@@ -25,10 +27,12 @@ private:
     StringsPanel stringsPanel;
     BronzaLookAndFeel bronzaLookAndFeel;
     
+    juce::TextButton helpButton;
+    
     bool isUpdatingUI;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GuitarTunerAudioEditor)
 };
 
 static constexpr int DEFAULT_WIDTH = 720;
-static constexpr int DEFAULT_HEIGHT = 480;  // было 400
+static constexpr int DEFAULT_HEIGHT = 480;

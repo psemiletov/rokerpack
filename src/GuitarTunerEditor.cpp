@@ -8,7 +8,15 @@ GuitarTunerAudioEditor::GuitarTunerAudioEditor (GuitarTunerAudioProcessor& p)
     addAndMakeVisible (meterPanel);
     addAndMakeVisible (stringsPanel);
     
-    setSize (720, 480);
+    // === КНОПКА ПОДСКАЗКИ ===
+    helpButton.setButtonText ("?");
+    helpButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+    helpButton.setColour (juce::TextButton::textColourOffId, Colors::brassLight);
+    helpButton.setColour (juce::TextButton::textColourOnId, Colors::brassHighlight);
+    helpButton.addListener (this);
+    addAndMakeVisible (helpButton);
+    
+    setSize (DEFAULT_WIDTH, DEFAULT_HEIGHT);
     startTimerHz (30);
 }
 
@@ -16,6 +24,22 @@ GuitarTunerAudioEditor::~GuitarTunerAudioEditor()
 {
     stopTimer();
     setLookAndFeel (nullptr);
+}
+
+void GuitarTunerAudioEditor::buttonClicked (juce::Button* button)
+{
+    if (button == &helpButton)
+    {
+        juce::AlertWindow::showMessageBoxAsync (
+            juce::MessageBoxIconType::InfoIcon,
+            "Tuning Tip",
+            "For best results:\n"
+            "1. Tune from E4 to E2.\n"
+            "This eliminates residual vibrations from lower strings.\n"
+            "2. If tuning from E2 to E4, mute already tuned strings\n"
+            "with your hand before tuning the next string."
+        );
+    }
 }
 
 void GuitarTunerAudioEditor::paint (juce::Graphics& g)
@@ -82,34 +106,16 @@ void GuitarTunerAudioEditor::paint (juce::Graphics& g)
     g.drawLine (40.0f, 58.0f, (float)bounds.getWidth() - 40, 58.0f, 1.5f);
 }
 
-/*
 void GuitarTunerAudioEditor::resized()
 {
     auto bounds = getLocalBounds();
     bounds = bounds.reduced (10, 10);
     bounds.removeFromTop (50);
     
-    // Обе панели одинаковой ширины (50% / 50%)
-    int halfWidth = bounds.getWidth() / 2;
+    // Позиционируем кнопку "?" в правом верхнем углу
+    helpButton.setBounds (bounds.getRight() - 25, bounds.getY() - 45, 22, 22);
     
-    auto leftArea = bounds.removeFromLeft (halfWidth);
-    auto rightArea = bounds;
-    
-    leftArea = leftArea.reduced (5, 5);
-    rightArea = rightArea.reduced (5, 5);
-    
-    meterPanel.setBounds (leftArea);
-    stringsPanel.setBounds (rightArea);
-}
-*/
-
-void GuitarTunerAudioEditor::resized()
-{
-    auto bounds = getLocalBounds();
-    bounds = bounds.reduced (10, 10);
-    bounds.removeFromTop (50);
-    
-    // Просто делим поровну
+    // Делим поровну
     int halfWidth = bounds.getWidth() / 2;
     
     auto leftArea = bounds.removeFromLeft (halfWidth);
@@ -119,26 +125,6 @@ void GuitarTunerAudioEditor::resized()
     stringsPanel.setBounds (rightArea.reduced (5, 5));
 }
 
-/*
-void GuitarTunerAudioEditor::resized()
-{
-    auto bounds = getLocalBounds();
-    bounds = bounds.reduced (10, 10);
-    bounds.removeFromTop (50);
-    
-    // Обе панели одинаковой ширины (50% / 50%)
-    int halfWidth = bounds.getWidth() / 2;
-    
-    auto leftArea = bounds.removeFromLeft (halfWidth);
-    auto rightArea = bounds;
-    
-    leftArea = leftArea.reduced (5, 5);
-    rightArea = rightArea.reduced (5, 5);
-    
-    meterPanel.setBounds (leftArea);
-    stringsPanel.setBounds (rightArea);
-}
-*/
 void GuitarTunerAudioEditor::timerCallback()
 {
     updateUIFromProcessor();
