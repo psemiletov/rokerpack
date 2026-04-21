@@ -5,11 +5,10 @@ MetallugaAudioProcessor::MetallugaAudioProcessor()
      : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                                           .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
        apvts (*this, nullptr, "Parameters", {
+           std::make_unique<juce::AudioParameterFloat> ("gate", "Gate", 
+               juce::NormalisableRange<float> (0.0f, 0.05f, 0.0001f), 0.005f),
            std::make_unique<juce::AudioParameterFloat> ("drive", "Drive", 0.0f, 1.0f, 0.50f),
-           std::make_unique<juce::AudioParameterFloat> ("level", "Level", 0.0f, 32.0f, 0.0f),
-           std::make_unique<juce::AudioParameterFloat> ("weight", "Weight", 0.01f, 0.99f, 0.68f),
-           std::make_unique<juce::AudioParameterFloat> ("aggro", "Aggro", 0.01f, 0.99f, 0.50f),  // ← было "reso"
-           std::make_unique<juce::AudioParameterFloat> ("warmth", "Warmth", 0.01f, 0.99f, 0.50f)
+           std::make_unique<juce::AudioParameterFloat> ("level", "Level", 0.0f, 32.0f, 0.0f)
        })
 {
 }
@@ -27,55 +26,24 @@ void MetallugaAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
         init_db();
         dBTableInitialized = true;
     }
-    
-    for (int i = 0; i < 2; ++i)
-    {
-        lp[i].mode = FILTER_MODE_LOWPASS;
-        hp[i].mode = FILTER_MODE_HIGHPASS;
-        lp[i].reset();
-        hp[i].reset();
-    }
-    
-    updateParameters();
 }
 
 void MetallugaAudioProcessor::releaseResources()
 {
-    for (int i = 0; i < 2; ++i)
-    {
-        lp[i].reset();
-        hp[i].reset();
-    }
-}
-
-void MetallugaAudioProcessor::updateParameters()
-{
-    float weightValue = apvts.getRawParameterValue("weight")->load();
-    currentAggroValue = apvts.getRawParameterValue("aggro")->load();  // ← было "reso"
-    
-    float cutoff = 1.0f - weightValue;
-    cutoff = juce::jlimit(0.01f, 0.99f, cutoff);
-    
-    for (int i = 0; i < 2; ++i)
-    {
-        lp[i].set_cutoff(cutoff);
-        hp[i].set_cutoff(cutoff);
-        lp[i].set_resonance(currentAggroValue);
-        hp[i].set_resonance(currentAggroValue);
-    }
 }
 
 void MetallugaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     
+    float gateThreshold = apvts.getRawParameterValue("gate")->load();
     float driveValue = apvts.getRawParameterValue("drive")->load();
     float levelValue = apvts.getRawParameterValue("level")->load();
-    float warmthValue = apvts.getRawParameterValue("warmth")->load();
-    
-    updateParameters();
     
     float levelLin = db2lin(levelValue);
+    
+    float preGain = 1.0f + driveValue * 12.0f;
+    float postGain = 0.3f + driveValue * 0.7f;
     
     int numChannels = juce::jmin(2, buffer.getNumChannels());
     int numSamples = buffer.getNumSamples();
@@ -83,23 +51,31 @@ void MetallugaAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     for (int channel = 0; channel < numChannels; ++channel)
     {
         float* channelData = buffer.getWritePointer(channel);
-        CResoFilter& lpFilter = lp[channel];
-        CResoFilter& hpFilter = hp[channel];
         
         for (int i = 0; i < numSamples; ++i)
         {
             float f = channelData[i];
             
-            f *= levelLin;
-            f = gritty_guitar_distortion(f, driveValue);
-            f = lpFilter.process(f);
-            f = hpFilter.process(f);
-            f = apply_aggro (f, currentAggroValue);  // ← используем currentAggroValue
-            f = warmify(f, warmthValue);
+            // === GATE ===
+            if (std::abs(f) < gateThreshold)
+            {
+                channelData[i] = 0.0f;
+                continue;
+            }
             
-            // Hard clipping
-            if (f > 1.0f) f = 1.0f;
-            else if (f < -1.0f) f = -1.0f;
+            // Усиление
+            f = f * preGain;
+            
+            // Асимметричный клип
+            if (f > 0.0f)
+                f = 1.0f - expf(-f * 1.5f);
+            else
+                f = -1.0f + expf(f * 1.5f);
+            
+            f = f * postGain;
+            f = tanh(f);
+            f = f * levelLin;
+            f = std::min(1.0f, std::max(-1.0f, f));
             
             channelData[i] = f;
         }
@@ -180,7 +156,6 @@ void MetallugaAudioProcessor::setStateInformation (const void* data, int sizeInB
     if (xml != nullptr)
     {
         apvts.replaceState (juce::ValueTree::fromXml (*xml));
-        updateParameters();
     }
 }
 

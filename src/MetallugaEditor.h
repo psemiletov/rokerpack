@@ -13,29 +13,23 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
     
-    static constexpr int DEFAULT_WIDTH = 750;
+    static constexpr int DEFAULT_WIDTH = 540;
     static constexpr int DEFAULT_HEIGHT = 370;
 
 private:
     MetallugaAudioProcessor& audioProcessor;
     
+    juce::Slider gateSlider;
     juce::Slider driveSlider;
     juce::Slider levelSlider;
-    juce::Slider weightSlider;
-    juce::Slider aggroSlider;      // ← было resoSlider
-    juce::Slider warmthSlider;
     
+    juce::Label gateLabel;
     juce::Label driveLabel;
     juce::Label levelLabel;
-    juce::Label weightLabel;
-    juce::Label aggroLabel;        // ← было resoLabel
-    juce::Label warmthLabel;
     
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gateAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> driveAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> levelAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> weightAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> aggroAttachment;  // ← было resoAttachment
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> warmthAttachment;
     
     BronzaLookAndFeel metallugaLookAndFeel;
     

@@ -5,6 +5,14 @@ MetallugaAudioEditor::MetallugaAudioEditor (MetallugaAudioProcessor& p)
 {
     setLookAndFeel (&metallugaLookAndFeel);
     
+  // Gate
+gateSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+gateSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
+gateSlider.setRange (0.0f, 0.05f, 0.0001f);  // ← шаг уменьшен с 0.001 до 0.0001
+gateSlider.setValue (0.005f, juce::dontSendNotification);
+gateSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
+addAndMakeVisible (gateSlider);
+
     // Drive
     driveSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
     driveSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
@@ -12,77 +20,40 @@ MetallugaAudioEditor::MetallugaAudioEditor (MetallugaAudioProcessor& p)
     driveSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
     addAndMakeVisible (driveSlider);
     
-    // Level (0..62 dB)
+    // Level
     levelSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
     levelSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    levelSlider.setRange (0.0f, 62.0f, 0.1f);
+    levelSlider.setRange (0.0f, 32.0f, 0.1f);
     levelSlider.setTextValueSuffix (" dB");
     levelSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
     addAndMakeVisible (levelSlider);
     
-    // Weight
-    weightSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    weightSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    weightSlider.setRange (0.01f, 0.99f, 0.001f);
-    weightSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
-    addAndMakeVisible (weightSlider);
-    
-    // Aggro (было Resonance)
-    aggroSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    aggroSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    aggroSlider.setRange (0.01f, 0.99f, 0.001f);
-    aggroSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
-    addAndMakeVisible (aggroSlider);
-    
-    // Warmth
-    warmthSlider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
-    warmthSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 70, 24);
-    warmthSlider.setRange (0.01f, 0.99f, 0.001f);
-    warmthSlider.setRotaryParameters (0.0f, juce::MathConstants<float>::twoPi, true);
-    addAndMakeVisible (warmthSlider);
-    
     // Attachments
+    gateAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
+        audioProcessor.apvts, "gate", gateSlider);
     driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.apvts, "drive", driveSlider);
     levelAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         audioProcessor.apvts, "level", levelSlider);
-    weightAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.apvts, "weight", weightSlider);
-    aggroAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.apvts, "aggro", aggroSlider);  // ← параметр теперь "aggro"
-    warmthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-        audioProcessor.apvts, "warmth", warmthSlider);
     
     // Labels
+    gateLabel.setText ("GATE", juce::dontSendNotification);
+    gateLabel.setJustificationType (juce::Justification::centred);
+    gateLabel.setFont (juce::Font (14.0f, juce::Font::bold));
+    gateLabel.attachToComponent (&gateSlider, false);
+    addAndMakeVisible (gateLabel);
+    
     driveLabel.setText ("DRIVE", juce::dontSendNotification);
     driveLabel.setJustificationType (juce::Justification::centred);
-    driveLabel.setFont (juce::Font (12.0f, juce::Font::bold));
+    driveLabel.setFont (juce::Font (14.0f, juce::Font::bold));
     driveLabel.attachToComponent (&driveSlider, false);
     addAndMakeVisible (driveLabel);
     
     levelLabel.setText ("LEVEL", juce::dontSendNotification);
     levelLabel.setJustificationType (juce::Justification::centred);
-    levelLabel.setFont (juce::Font (12.0f, juce::Font::bold));
+    levelLabel.setFont (juce::Font (14.0f, juce::Font::bold));
     levelLabel.attachToComponent (&levelSlider, false);
     addAndMakeVisible (levelLabel);
-    
-    weightLabel.setText ("WEIGHT", juce::dontSendNotification);
-    weightLabel.setJustificationType (juce::Justification::centred);
-    weightLabel.setFont (juce::Font (12.0f, juce::Font::bold));
-    weightLabel.attachToComponent (&weightSlider, false);
-    addAndMakeVisible (weightLabel);
-    
-    aggroLabel.setText ("AGGRO", juce::dontSendNotification);
-    aggroLabel.setJustificationType (juce::Justification::centred);
-    aggroLabel.setFont (juce::Font (12.0f, juce::Font::bold));
-    aggroLabel.attachToComponent (&aggroSlider, false);
-    addAndMakeVisible (aggroLabel);
-    
-    warmthLabel.setText ("WARMTH", juce::dontSendNotification);
-    warmthLabel.setJustificationType (juce::Justification::centred);
-    warmthLabel.setFont (juce::Font (12.0f, juce::Font::bold));
-    warmthLabel.attachToComponent (&warmthSlider, false);
-    addAndMakeVisible (warmthLabel);
     
     setSize (DEFAULT_WIDTH, DEFAULT_HEIGHT);
 }
@@ -165,14 +136,16 @@ void MetallugaAudioEditor::paint (juce::Graphics& g)
 void MetallugaAudioEditor::resized()
 {
     auto area = getLocalBounds();
-    auto titleArea = area.removeFromTop (80);
-    auto sliderArea = area.reduced (20, 25);
+    area.removeFromTop (80);
+    auto sliderArea = area.reduced (30, 25);
     
-    int sliderWidth = sliderArea.getWidth() / 5;
+    int sliderWidth = sliderArea.getWidth() / 3;
     
-    driveSlider.setBounds (sliderArea.removeFromLeft (sliderWidth).reduced (10, 10));
-    levelSlider.setBounds (sliderArea.removeFromLeft (sliderWidth).reduced (10, 10));
-    weightSlider.setBounds (sliderArea.removeFromLeft (sliderWidth).reduced (10, 10));
-    aggroSlider.setBounds (sliderArea.removeFromLeft (sliderWidth).reduced (10, 10));
-    warmthSlider.setBounds (sliderArea.reduced (10, 10));
+    auto gateArea = sliderArea.removeFromLeft (sliderWidth);
+    auto driveArea = sliderArea.removeFromLeft (sliderWidth);
+    auto levelArea = sliderArea;
+    
+    gateSlider.setBounds (gateArea.reduced (15, 10));
+    driveSlider.setBounds (driveArea.reduced (15, 10));
+    levelSlider.setBounds (levelArea.reduced (15, 10));
 }
