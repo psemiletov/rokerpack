@@ -201,7 +201,7 @@ void GuitarPitchDetector::processSamples (const float* buffer, int numSamples)
   в этом варианте, при настройке струн от низких частот к высоким, с B3 на E4 срабатывает не сразу, а сначала детектируется как E2, а потом уже как E4. Не пиши код, но давай подумаем почему так может происходить. В чем корень проблемы? Вероятно в переключении с одной целевой струны на другую. Ведь если определению частоты не предшествует другое определение частоты, то частота (именно частота) определяется правильно, а следом подтягиваются и название ноты и номер струны. Итак, ошибка определения частоты возникает (не всегда, но может возникать) чаще всего только после предшествующего определения, и только если предшествующая частота ниже чем новая определяемая.
   
   */
- 
+ /*
 float GuitarPitchDetector::detectPitch (const std::vector<float>& buffer)
 {
     int analysisSize = (int)buffer.size();
@@ -306,8 +306,252 @@ float GuitarPitchDetector::detectPitch (const std::vector<float>& buffer)
     
     return 0.0f;
 }
-
-
+*/
+ /*
+ float GuitarPitchDetector::detectPitch (const std::vector<float>& buffer)
+{
+    int analysisSize = (int)buffer.size();
+    
+    if (analysisSize < 256)
+        return 0.0f;
+    
+    int minLag = static_cast<int> (sampleRate / MAX_FREQ);
+    int maxLag = static_cast<int> (sampleRate / MIN_FREQ);
+    
+    if (minLag < 2) minLag = 2;
+    if (maxLag > analysisSize / 2) maxLag = analysisSize / 2;
+    
+    // YIN алгоритм
+    std::vector<float> diff (maxLag + 1, 0.0f);
+    std::vector<float> cmndf (maxLag + 1, 1.0f);
+    
+    for (int tau = minLag; tau <= maxLag; ++tau)
+    {
+        float sum = 0.0f;
+        for (int i = 0; i < analysisSize - tau; ++i)
+        {
+            float delta = buffer[i] - buffer[i + tau];
+            sum += delta * delta;
+        }
+        diff[tau] = sum;
+    }
+    
+    float runningSum = 0.0f;
+    for (int tau = minLag; tau <= maxLag; ++tau)
+    {
+        runningSum += diff[tau];
+        if (runningSum != 0.0f)
+            cmndf[tau] = diff[tau] * static_cast<float>(tau) / runningSum;
+        else
+            cmndf[tau] = 1.0f;
+    }
+    
+    float threshold = 0.15f;
+    int minIndex = -1;
+    
+    for (int tau = minLag + 1; tau < maxLag; ++tau)
+    {
+        if (cmndf[tau] < threshold &&
+            cmndf[tau] < cmndf[tau - 1] &&
+            cmndf[tau] < cmndf[tau + 1])
+        {
+            minIndex = tau;
+            break;
+        }
+    }
+    
+    if (minIndex == -1)
+    {
+        float minValue = cmndf[minLag];
+        minIndex = minLag;
+        for (int tau = minLag + 1; tau <= maxLag; ++tau)
+        {
+            if (cmndf[tau] < minValue)
+            {
+                minValue = cmndf[tau];
+                minIndex = tau;
+            }
+        }
+    }
+    
+    float interpolatedTau = static_cast<float> (minIndex);
+    if (minIndex > minLag && minIndex < maxLag)
+    {
+        interpolatedTau += parabolicInterpolation (cmndf, minIndex);
+    }
+    
+    float confidenceValue = 1.0f - cmndf[minIndex];
+    confidence = confidenceValue;
+    
+    std::cout << "YIN: minIndex=" << minIndex << ", interpolatedTau=" << interpolatedTau 
+              << ", confidence=" << confidenceValue << std::endl;
+    
+              
+              
+    if (interpolatedTau > 0.0f && confidenceValue > MIN_CONFIDENCE)
+    {
+        float frequency = static_cast<float> (sampleRate) / interpolatedTau;
+   std::cout << "Raw frequency before correction: " << frequency << std::endl;              
+        
+        // === ОКТАВНАЯ КОРРЕКЦИЯ ДЛЯ E4 ===
+        // Случай 1: YIN выдал E2 (82 Hz)
+        if (frequency >= 80.0f && frequency <= 85.0f)
+        {
+            float higherFreq = frequency * 4.0f;  // 82 * 4 = 328 Hz
+            if (higherFreq >= 320.0f && higherFreq <= 336.0f)
+            {
+                std::cout << "E2->E4 correction: " << frequency << " Hz -> " << higherFreq << " Hz" << std::endl;
+                frequency = higherFreq;
+                confidence = 0.9f;
+            }
+        }
+        // Случай 2: YIN выдал E3 (165 Hz)
+        else if (frequency >= 160.0f && frequency <= 168.0f)
+        {
+            float higherFreq = frequency * 2.0f;  // 165 * 2 = 330 Hz
+            if (higherFreq >= 320.0f && higherFreq <= 336.0f)
+            {
+                std::cout << "E3->E4 correction: " << frequency << " Hz -> " << higherFreq << " Hz" << std::endl;
+                frequency = higherFreq;
+                confidence = 0.9f;
+            }
+        }
+        
+        if (frequency >= MIN_FREQ && frequency <= MAX_FREQ)
+        {
+            std::cout << "Final frequency: " << frequency << std::endl;
+            return frequency;
+        }
+    }
+    
+    return 0.0f;
+}
+ */
+ 
+ float GuitarPitchDetector::detectPitch (const std::vector<float>& buffer)
+{
+    int analysisSize = (int)buffer.size();
+    
+    if (analysisSize < 256)
+        return 0.0f;
+    
+    int minLag = static_cast<int> (sampleRate / MAX_FREQ);
+    int maxLag = static_cast<int> (sampleRate / MIN_FREQ);
+    
+    if (minLag < 2) minLag = 2;
+    if (maxLag > analysisSize / 2) maxLag = analysisSize / 2;
+    
+    // YIN алгоритм
+    std::vector<float> diff (maxLag + 1, 0.0f);
+    std::vector<float> cmndf (maxLag + 1, 1.0f);
+    
+    for (int tau = minLag; tau <= maxLag; ++tau)
+    {
+        float sum = 0.0f;
+        for (int i = 0; i < analysisSize - tau; ++i)
+        {
+            float delta = buffer[i] - buffer[i + tau];
+            sum += delta * delta;
+        }
+        diff[tau] = sum;
+    }
+    
+    float runningSum = 0.0f;
+    for (int tau = minLag; tau <= maxLag; ++tau)
+    {
+        runningSum += diff[tau];
+        if (runningSum != 0.0f)
+            cmndf[tau] = diff[tau] * static_cast<float>(tau) / runningSum;
+        else
+            cmndf[tau] = 1.0f;
+    }
+    
+    float threshold = 0.15f;
+    int minIndex = -1;
+    
+    for (int tau = minLag + 1; tau < maxLag; ++tau)
+    {
+        if (cmndf[tau] < threshold &&
+            cmndf[tau] < cmndf[tau - 1] &&
+            cmndf[tau] < cmndf[tau + 1])
+        {
+            minIndex = tau;
+            break;
+        }
+    }
+    
+    if (minIndex == -1)
+    {
+        float minValue = cmndf[minLag];
+        minIndex = minLag;
+        for (int tau = minLag + 1; tau <= maxLag; ++tau)
+        {
+            if (cmndf[tau] < minValue)
+            {
+                minValue = cmndf[tau];
+                minIndex = tau;
+            }
+        }
+    }
+    
+    float interpolatedTau = static_cast<float> (minIndex);
+    if (minIndex > minLag && minIndex < maxLag)
+    {
+        interpolatedTau += parabolicInterpolation (cmndf, minIndex);
+    }
+    
+    float confidenceValue = 1.0f - cmndf[minIndex];
+    confidence = confidenceValue;
+    
+    std::cout << "YIN: minIndex=" << minIndex << ", interpolatedTau=" << interpolatedTau 
+              << ", confidence=" << confidenceValue << std::endl;
+    
+    if (interpolatedTau > 0.0f && confidenceValue > MIN_CONFIDENCE)
+    {
+        float frequency = static_cast<float> (sampleRate) / interpolatedTau;
+        
+        std::cout << "Raw frequency before correction: " << frequency << std::endl;
+        
+        // === ОКТАВНАЯ КОРРЕКЦИЯ ДЛЯ E4 ===
+        // Проверяем, является ли исходная частота реальной нотой гитары
+        bool isValidGuitarNote = false;
+        
+        // Список частот открытых струн гитары (с допуском ±3 Hz)
+        float guitarNotes[] = { 82.41f, 110.00f, 146.83f, 196.00f, 246.94f, 329.63f };
+        for (float note : guitarNotes)
+        {
+            if (std::abs(frequency - note) < 3.0f)
+            {
+                isValidGuitarNote = true;
+                break;
+            }
+        }
+        
+        // Применяем коррекцию только если частота НЕ является реальной нотой
+        if (!isValidGuitarNote)
+        {
+            for (int mult = 2; mult <= 8; mult *= 2)
+            {
+                float higherFreq = frequency * mult;
+                if (higherFreq >= 320.0f && higherFreq <= 350.0f)
+                {
+                    std::cout << "Octave correction (×" << mult << "): " << frequency << " Hz -> " << higherFreq << " Hz" << std::endl;
+                    frequency = higherFreq;
+                    confidence = 0.9f;
+                    break;
+                }
+            }
+        }
+        
+        if (frequency >= MIN_FREQ && frequency <= MAX_FREQ)
+        {
+            std::cout << "Final frequency: " << frequency << std::endl;
+            return frequency;
+        }
+    }
+    
+    return 0.0f;
+}
  
  void GuitarPitchDetector::processSamples (const float* buffer, int numSamples)
 {
