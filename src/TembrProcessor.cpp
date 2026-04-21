@@ -9,7 +9,6 @@ TembrAudioProcessor::TembrAudioProcessor()
            std::make_unique<juce::AudioParameterFloat> ("treble", "Treble", -12.0f, 12.0f, 0.0f)
        })
 {
-    // apvts.state.setProperty — не нужно, удалил
 }
 
 TembrAudioProcessor::~TembrAudioProcessor()
@@ -20,8 +19,6 @@ void TembrAudioProcessor::prepareToPlay (double sRate, int samplesPerBlock)
 {
     sampleRate = (float) sRate;
     juce::ignoreUnused(samplesPerBlock);
-    
-    // init_db() не нужен, удалил
     
     eqL.setSampleRate(sampleRate);
     eqR.setSampleRate(sampleRate);

@@ -146,8 +146,8 @@ float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
     float confidenceValue = 1.0f - cmndf[minIndex];
     confidence = confidenceValue;
     
-    std::cout << "YIN: minIndex=" << minIndex << ", interpolatedTau=" << interpolatedTau 
-              << ", confidence=" << confidenceValue << std::endl;
+   // std::cout << "YIN: minIndex=" << minIndex << ", interpolatedTau=" << interpolatedTau 
+     //         << ", confidence=" << confidenceValue << std::endl;
     
     if (interpolatedTau > 0.0f && confidenceValue > MIN_CONFIDENCE)
     {
@@ -155,7 +155,7 @@ float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
         
         if (frequency >= MIN_FREQ && frequency <= MAX_FREQ)
         {
-            std::cout << "YIN frequency: " << frequency << std::endl;
+       //     std::cout << "YIN frequency: " << frequency << std::endl;
             return frequency;
         }
         
@@ -165,7 +165,7 @@ float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
             float higherFreq = frequency * 2.0f;
             if (higherFreq >= MIN_FREQ && higherFreq <= MAX_FREQ)
             {
-                std::cout << "YIN octave corrected (up): " << higherFreq << std::endl;
+         //       std::cout << "YIN octave corrected (up): " << higherFreq << std::endl;
                 return higherFreq;
             }
         }
@@ -174,7 +174,7 @@ float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
             float lowerFreq = frequency / 2.0f;
             if (lowerFreq >= MIN_FREQ && lowerFreq <= MAX_FREQ)
             {
-                std::cout << "YIN octave corrected (down): " << lowerFreq << std::endl;
+           //     std::cout << "YIN octave corrected (down): " << lowerFreq << std::endl;
                 return lowerFreq;
             }
         }
@@ -233,7 +233,7 @@ void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
         // Если записали нужное количество сэмплов, анализируем
         if (samplesToRecord == 0)
         {
-            std::cout << "=== Recording complete! Analyzing " << noteWritePosition << " samples ===" << std::endl;
+            //std::cout << "=== Recording complete! Analyzing " << noteWritePosition << " samples ===" << std::endl;
             
             float frequency = detectPitch (noteBuffer);
             
@@ -242,12 +242,12 @@ void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
                 currentFrequency = frequency;
                 currentNoteName = frequencyToNoteName (frequency);
                 noteDetected = true;
-                std::cout << "Note detected: " << currentNoteName << " at " << frequency << " Hz" << std::endl;
+              //  std::cout << "Note detected: " << currentNoteName << " at " << frequency << " Hz" << std::endl;
             }
             else
             {
                 noteDetected = false;
-                std::cout << "No note detected" << std::endl;
+              //  std::cout << "No note detected" << std::endl;
             }
             
             // Сброс для следующей ноты
@@ -260,8 +260,8 @@ void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
     // Состояние: ожидание атаки
     if (currentEnergy > SILENCE_THRESHOLD)
     {
-        std::cout << "=== ONSET DETECTED! Recording " << noteBufferSize << " samples ===" << std::endl;
-        std::cout << "Energy: " << currentEnergy << std::endl;
+//        std::cout << "=== ONSET DETECTED! Recording " << noteBufferSize << " samples ===" << std::endl;
+  //      std::cout << "Energy: " << currentEnergy << std::endl;
         
         // Начинаем запись
         isRecording = true;
@@ -273,7 +273,7 @@ void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
     }
     
     // Отладка (реже)
-    static int debugCounter = 0;
+    /*static int debugCounter = 0;
     if (++debugCounter % 100 == 0)
     {
         std::cout << "=== Debug ===" << std::endl;
@@ -281,5 +281,5 @@ void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
         std::cout << "Samples to record: " << samplesToRecord << std::endl;
         std::cout << "Energy: " << currentEnergy << std::endl;
         std::cout << "Note detected flag: " << (noteDetected.load() ? "YES" : "NO") << std::endl;
-    }
+    }*/
 }
