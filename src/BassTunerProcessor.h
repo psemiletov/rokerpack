@@ -3,7 +3,6 @@
 #include <JuceHeader.h>
 #include "SmartPitchDetector.h"
 
-// Константа для количества струн
 constexpr int NUM_BASS_STRINGS = 4;
 
 class BassTunerAudioProcessor : public juce::AudioProcessor

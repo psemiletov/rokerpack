@@ -3,7 +3,6 @@
 #include <cmath>
 #include <iostream>
 
-// Константы
 constexpr float MAX_CENTS_DEVIATION = 50.0f;
 constexpr int MIN_BASS_MIDI = 28;
 constexpr int MAX_BASS_MIDI = 55;

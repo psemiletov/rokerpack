@@ -1,5 +1,5 @@
 #include "BassStringsPanel.h"
-#include "Colors.h"  // ← добавить эту строку
+#include "Colors.h"  
 
 BassStringsPanel::BassStringsPanel()
     : activeString (-1)
