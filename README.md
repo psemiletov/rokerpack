@@ -50,7 +50,7 @@ Tuner for bass guitar with note display, frequency readout, and fretboard visual
 
 ### Windows
 
-1. Download the latest installer (`RokerPack_Setup.exe`) from [Releases](https://github.com/psemiletov/rokerpack/releases)
+1. Download the latest installer (`RokerPack-Setup.exe`) from [Releases](https://github.com/psemiletov/rokerpack/releases)
 2. Run the installer and follow the instructions
 3. Plugins will be installed to `C:\Program Files\Common Files\VST3\`
 
