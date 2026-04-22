@@ -1,0 +1,363 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Базовые цвета (ночная тема по умолчанию) */
+:root {
+    --bg-gradient-start: #1a0f08;
+    --bg-gradient-end: #2c1a10;
+    --container-bg: rgba(0, 0, 0, 0.35);
+    --text-primary: #f0e0c8;
+    --text-secondary: #e0d0b8;
+    --accent-gold: #c9a03d;
+    --accent-gold-light: #f5d97a;
+    --accent-gold-hover: #ffe0a3;
+    --card-bg: rgba(0, 0, 0, 0.35);
+    --card-border: rgba(201, 160, 61, 0.3);
+    --card-hover-bg: rgba(0, 0, 0, 0.5);
+    --card-hover-border: rgba(201, 160, 61, 0.8);
+    --btn-bg: #2a1a0e;
+    --btn-hover-bg: #3a2a1a;
+    --btn-windows-bg: #1e3a5f;
+    --btn-windows-border: #4a7a9e;
+    --btn-linux-bg: #2a4a2a;
+    --btn-linux-border: #6a9e6a;
+    --btn-source-bg: #2a2a2a;
+    --btn-source-border: #8a8a6a;
+    --btn-donate-bg: #0070ba;
+    --btn-donate-hover: #005ea6;
+    --footer-border: #c9a03d;
+}
+
+/* Светлая тема */
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg-gradient-start: #e8dcc8;
+        --bg-gradient-end: #d4c4a8;
+        --container-bg: rgba(255, 255, 255, 0.85);
+        --text-primary: #3a2a1a;
+        --text-secondary: #4a3a2a;
+        --accent-gold: #b8860b;
+        --accent-gold-light: #d4a017;
+        --accent-gold-hover: #e6b422;
+        --card-bg: rgba(255, 255, 255, 0.7);
+        --card-border: rgba(184, 134, 11, 0.3);
+        --card-hover-bg: rgba(255, 255, 255, 0.85);
+        --card-hover-border: rgba(184, 134, 11, 0.6);
+        --btn-bg: #d4c4a8;
+        --btn-hover-bg: #e8dcc8;
+        --btn-windows-bg: #2c5f8a;
+        --btn-windows-border: #1e3a5f;
+        --btn-linux-bg: #3a6e3a;
+        --btn-linux-border: #2a4a2a;
+        --btn-source-bg: #6a6a6a;
+        --btn-source-border: #4a4a4a;
+        --btn-donate-bg: #0070ba;
+        --btn-donate-hover: #005ea6;
+        --footer-border: #b8860b;
+    }
+    
+    body {
+        background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+    }
+    
+    /* Для светлой темы убираем blur у контейнера, чтобы текст был чётче */
+    .container {
+        backdrop-filter: none;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Ссылки в светлой теме */
+    .intro a {
+        color: #b8860b;
+        border-bottom-color: #d4a017;
+    }
+    
+    .intro a:hover {
+        color: #8b6508;
+        border-bottom-color: #b8860b;
+    }
+    
+    /* Кнопки в светлой теме */
+    .btn {
+        color: #2a1a0e;
+    }
+    
+    .btn-windows, .btn-linux, .btn-source {
+        color: #f0e0c8;
+    }
+    
+    .btn-windows {
+        background: #2c5f8a;
+    }
+    
+    .btn-linux {
+        background: #3a6e3a;
+    }
+    
+    .btn-source {
+        background: #6a6a6a;
+    }
+    
+    /* Плагины в светлой теме */
+    .plugin-card p {
+        color: #4a3a2a;
+    }
+    
+    footer {
+        opacity: 0.8;
+    }
+}
+
+body {
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    color: var(--text-primary);
+    line-height: 1.5;
+    padding: 2rem 1rem;
+    transition: background 0.3s ease;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--container-bg);
+    border-radius: 2rem;
+    padding: 2rem;
+    backdrop-filter: blur(2px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--accent-gold);
+    padding-bottom: 1rem;
+}
+
+h1 {
+    font-size: 3rem;
+    letter-spacing: 4px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-gold-light), var(--accent-gold));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.tagline {
+    font-size: 1rem;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Intro */
+.intro {
+    margin-bottom: 2rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+    border-left: 4px solid var(--accent-gold);
+}
+
+@media (prefers-color-scheme: light) {
+    .intro {
+        background: rgba(0, 0, 0, 0.05);
+    }
+}
+
+.intro p {
+    margin-bottom: 1rem;
+}
+
+.intro a {
+    color: var(--accent-gold-light);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--accent-gold);
+}
+
+.intro a:hover {
+    color: var(--accent-gold-hover);
+    border-bottom-color: var(--accent-gold-light);
+}
+
+/* Downloads */
+.downloads {
+    margin-bottom: 2.5rem;
+    text-align: center;
+}
+
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.85rem 1.5rem;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 3rem;
+    transition: all 0.2s ease;
+    background: var(--btn-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--accent-gold);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    background: var(--btn-hover-bg);
+    border-color: var(--accent-gold-light);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-windows {
+    background: var(--btn-windows-bg);
+    border-color: var(--btn-windows-border);
+    color: #f0e0c8;
+}
+
+.btn-linux {
+    background: var(--btn-linux-bg);
+    border-color: var(--btn-linux-border);
+    color: #f0e0c8;
+}
+
+.btn-source {
+    background: var(--btn-source-bg);
+    border-color: var(--btn-source-border);
+    color: #f0e0c8;
+}
+
+.btn-donate {
+    background: var(--btn-donate-bg);
+    border-color: var(--btn-donate-bg);
+    color: white;
+}
+
+.btn-donate:hover {
+    background: var(--btn-donate-hover);
+    border-color: var(--btn-donate-hover);
+}
+
+/* Plugins */
+.plugins {
+    margin-bottom: 2rem;
+}
+
+.plugins h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: var(--accent-gold-light);
+    border-left: 4px solid var(--accent-gold);
+    padding-left: 1rem;
+}
+
+.plugin-card {
+    background: var(--card-bg);
+    border-radius: 1.25rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s;
+    border: 1px solid var(--card-border);
+}
+
+.plugin-card:hover {
+    background: var(--card-hover-bg);
+    border-color: var(--card-hover-border);
+}
+
+.plugin-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--accent-gold-light);
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.plugin-card p {
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--footer-border);
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .container {
+        padding: 1.25rem;
+    }
+    
+    h1 {
+        font-size: 2.2rem;
+    }
+    
+    .plugin-card h3 {
+        font-size: 1.25rem;
+    }
+    
+    .btn {
+        padding: 0.7rem 1.2rem;
+        font-size: 0.9rem;
+    }
+    
+    .button-group, .button-row {
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .button-group, .button-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn {
+        text-align: center;
+    }
+}
+
+/* Credits */
+.credits {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    text-align: center;
+    font-size: 0.8rem;
+    opacity: 0.6;
+    border-top: 1px solid var(--footer-border);
+}
+
+.credits a {
+    color: var(--accent-gold-light);
+    text-decoration: none;
+}
+
+.credits a:hover {
+    text-decoration: underline;
+}
