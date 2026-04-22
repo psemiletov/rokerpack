@@ -294,7 +294,6 @@ target_sources(GuitarTuner PRIVATE
   src/GuitarTunerEditor.cpp
   src/StringsPanel.cpp
   src/GuitarMeterPanel.cpp
-  src/PitchDetector.cpp
   src/GuitarPitchDetector.cpp
   src/GateDetector.cpp 
   src/BronzaLookAndFeel.cpp
@@ -338,8 +337,6 @@ target_sources(BassTuner PRIVATE
   src/BassTunerEditor.cpp
   src/BassStringsPanel.cpp
   src/MeterPanel.cpp
-  src/BassPitchDetector.cpp
-  src/BassPitchDetectorMcLeod.cpp
   src/SmartPitchDetector.cpp
   src/BronzaLookAndFeel.cpp
 )

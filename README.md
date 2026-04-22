@@ -16,7 +16,7 @@ The classic overdrive. Has **Drive**, **Level**, **Lows** and **Treble** paramet
 
 ### Metalluga
 
-The hard and crisp distortion with five controls to customize the effect for your needs: **Drive**, **Level**, **Weight**, **Resonance** and **Warmth**. The main control here is **Level**, all others build around it. If you don't touch too much the distortion stuff, you can use Metalluga in softer genres such as blues.
+The hard and crisp distortion with five controls to customize the effect for your needs: **Gate**, **Drive**, **Level**.
 
 ### Mistral
 
@@ -31,12 +31,13 @@ Simple, one-parameter saturator to add some warmth. BTW, it is built into Metall
 Tuner for six-string guitar with note display, frequency readout, and fretboard visualization. 
 
 For best results with the tuner:
-- **Tune from high strings to low strings (E4 → E2)** — this eliminates residual vibrations.
-- **If tuning from low to high (E2 → E4), mute already tuned strings** with your hand before tuning the next string.
+- **Tune from the thinnest string (E4) to the thickest (E2)** - this completely eliminates the influence of residual vibrations from thicker strings.
+
+- **If tuning from E2 to E4, mute already tuned strings** with your hand before tuning the next string.
 
 ### BassTuner
 
-Tuner for bass guitar with note display, frequency readout, and fretboard visualization. For best results, tune from the lowest string (E1) to the highest (G2).
+Tuner for bass guitar with note display, frequency readout, and fretboard visualization.
 
 ## Requirements
 
@@ -77,4 +78,4 @@ If you find ROKER PACK useful, you can support further development:
 
 **Bitcoin:** bc1qpdjzcedha54rpaa3nl5q0xh3hmz2sfcx49z99w
 
-Your support is greatly appreciated! 🙌
+Your support is greatly appreciated!

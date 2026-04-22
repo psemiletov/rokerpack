@@ -34,7 +34,7 @@ void GuitarTunerAudioEditor::buttonClicked (juce::Button* button)
             juce::MessageBoxIconType::InfoIcon,
             "Tuning Tip",
             "For best results:\n"
-            "1. Tune from E4 to E2.\n"
+            "1. Tune from thinnest string (E4) to thickest (E2).\n"
             "This eliminates residual vibrations from lower strings.\n"
             "2. If tuning from E2 to E4, mute already tuned strings\n"
             "with your hand before tuning the next string."
