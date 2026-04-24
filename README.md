@@ -4,7 +4,7 @@
 
 ## GUITAR EFFECTS/TOOLS
 
-Guitar pedal effects from Bedroom Studio ARE NOT emulation of famous Boss DS-1, Boss Overdrive or Ibanez Tube Screamer. My effort is to create its own, specific sound, although it can be designed after hardware analogs. As VST3 plugins, you can use them in your preferred DAW: Ardour, Reaper, Muse, Cubase and others.
+Guitar pedal effects from Roker Pack ARE NOT emulation of famous Boss DS-1, Boss Overdrive or Ibanez Tube Screamer. My effort is to create its own, specific sound, although it can be designed after hardware analogs. As VST3 plugins, you can use them in your preferred DAW: Ardour, Reaper, Muse, Cubase and others.
 
 ### Bronza
 
