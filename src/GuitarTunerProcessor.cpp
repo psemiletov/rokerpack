@@ -8,6 +8,7 @@ constexpr float MAX_CENTS_DEVIATION = 50.0f;
 constexpr int MIN_GUITAR_MIDI = 40;
 constexpr int MAX_GUITAR_MIDI = 88;
 
+/*
 GuitarTunerAudioProcessor::GuitarTunerAudioProcessor()
     : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::mono(), true)
                                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
@@ -19,6 +20,21 @@ GuitarTunerAudioProcessor::GuitarTunerAudioProcessor()
     , targetNote ("--")
 {
 }
+*/
+
+
+GuitarTunerAudioProcessor::GuitarTunerAudioProcessor()
+    : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::mono(), true)
+                                       .withOutput ("Output", juce::AudioChannelSet::disabled()))
+    , currentSampleRate (44100.0)
+    , targetFrequency (0.0f)
+    , centsDeviation (0.0f)
+    , stringNumber (-1)
+    , signalActive (false)
+    , targetNote ("--")
+{
+}
+
 
 GuitarTunerAudioProcessor::~GuitarTunerAudioProcessor()
 {
@@ -180,7 +196,7 @@ void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
                         stringNumber.store (NUM_GUITAR_STRINGS - closestString);
                     }
                 }
-            }
+            } 
         }
         else
         {
@@ -190,17 +206,18 @@ void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
         }
     }
     
-    if (buffer.getNumChannels() > 1)
+  /*  if (buffer.getNumChannels() > 1)
     {
         buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
-    }
+    }*/
 }
 
+/*
 void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused(buffer, midiMessages);
 }
-
+*/
 bool GuitarTunerAudioProcessor::hasEditor() const
 {
     return true;

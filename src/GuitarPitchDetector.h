@@ -54,6 +54,8 @@ private:
     static constexpr float MIN_CONFIDENCE = 0.5f;
     static constexpr float SILENCE_THRESHOLD = 0.0001f;
     static constexpr float RECORD_SECONDS = 0.5f;  // 500 мс для гитары
+    //static constexpr float RECORD_SECONDS = 0.2f;  // 500 мс для гитары
+    
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GuitarPitchDetector)
 };

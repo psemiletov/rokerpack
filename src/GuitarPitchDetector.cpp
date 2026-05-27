@@ -4,6 +4,9 @@
 #include <vector>
 #include <cmath>
 
+#include <chrono>
+#include <iostream>
+
 GuitarPitchDetector::GuitarPitchDetector()
     : noteBufferSize (0)
     , noteWritePosition (0)
@@ -100,12 +103,21 @@ float GuitarPitchDetector::detectPitch (const std::vector<float>& buffer)
     
     if (analysisSize < 256)
         return 0.0f;
+   
+  /* if (analysisSize > 4096)
+        analysisSize = 4096;
     
+    */
+  
+  if (analysisSize > 2048)
+    analysisSize = 2048;
     int minLag = static_cast<int> (sampleRate / MAX_FREQ);
     int maxLag = static_cast<int> (sampleRate / MIN_FREQ);
     
-    if (minLag < 2) minLag = 2;
-    if (maxLag > analysisSize / 2) maxLag = analysisSize / 2;
+    if (minLag < 2) 
+       minLag = 2;
+    if (maxLag > analysisSize / 2)
+       maxLag = analysisSize / 2;
     
     // YIN алгоритм
     std::vector<float> diff (maxLag + 1, 0.0f);
@@ -219,6 +231,7 @@ float GuitarPitchDetector::detectPitch (const std::vector<float>& buffer)
     return 0.0f;
 }
  
+ 
  void GuitarPitchDetector::processSamples (const float* buffer, int numSamples)
 {
     if (buffer == nullptr || numSamples <= 0)
@@ -250,28 +263,32 @@ float GuitarPitchDetector::detectPitch (const std::vector<float>& buffer)
         // Если записали нужное количество сэмплов, анализируем
         if (samplesToRecord == 0)
         {
-          //  std::cout << "=== Recording complete! Analyzing " << noteWritePosition << " samples ===" << std::endl;
+            // Измеряем время выполнения detectPitch
+            auto start = std::chrono::steady_clock::now();
             
             float frequency = detectPitch (noteBuffer);
             
+            auto end = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            /*
+            static int logCounter = 0;
+            if (++logCounter % 5 == 0)
+            {
+                std::cout << "detectPitch took " << elapsed << " microseconds, bufferSize=" << noteWritePosition << std::endl;
+            }
+            */
             if (frequency > 0.0f)
             {
                 currentFrequency = frequency;
                 currentNoteName = frequencyToNoteName (frequency);
                 noteDetected = true;
-            //    std::cout << "Note detected: " << currentNoteName << " at " << frequency << " Hz" << std::endl;
             }
             else
             {
                 noteDetected = false;
-              //  std::cout << "No note detected" << std::endl;
             }
             
-            // === КЛЮЧЕВОЕ ИЗМЕНЕНИЕ ===
-            // Очищаем буфер СРАЗУ после анализа, независимо от результата
-            // Это предотвращает влияние остаточных колебаний на следующую ноту
             noteWritePosition = 0;
-            std::fill(noteBuffer.begin(), noteBuffer.end(), 0.0f);
             isRecording = false;
         }
         return;
@@ -280,9 +297,6 @@ float GuitarPitchDetector::detectPitch (const std::vector<float>& buffer)
     // Состояние: ожидание атаки
     if (currentEnergy > SILENCE_THRESHOLD)
     {
-        //std::cout << "=== ONSET DETECTED! Recording " << noteBufferSize << " samples ===" << std::endl;
-        //std::cout << "Energy: " << currentEnergy << std::endl;
-        
         // Начинаем запись
         isRecording = true;
         samplesToRecord = noteBufferSize;
@@ -291,16 +305,4 @@ float GuitarPitchDetector::detectPitch (const std::vector<float>& buffer)
         // Сбрасываем флаг детекции
         noteDetected = false;
     }
-    
-    // Отладка (реже)
-    /*static int debugCounter = 0;
-    if (++debugCounter % 100 == 0)
-    {
-        std::cout << "=== Debug ===" << std::endl;
-        std::cout << "Recording: " << (isRecording ? "YES" : "NO") << std::endl;
-        std::cout << "Samples to record: " << samplesToRecord << std::endl;
-        std::cout << "Energy: " << currentEnergy << std::endl;
-        std::cout << "Note detected flag: " << (noteDetected.load() ? "YES" : "NO") << std::endl;
-        std::cout << "Note buffer pos: " << noteWritePosition << std::endl;
-    }*/
 }
