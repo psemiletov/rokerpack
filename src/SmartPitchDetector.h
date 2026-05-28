@@ -48,6 +48,8 @@ private:
     static constexpr float MAX_FREQ = 400.0f;
     static constexpr float MIN_CONFIDENCE = 0.5f;
     static constexpr float SILENCE_THRESHOLD = 0.0001f;
+        
+    
   //  static constexpr float RECORD_SECONDS = 0.8f;   // 800 мс (было 1.5)
   //  static constexpr float RECORD_SECONDS = 0.35f;   // 350 мс (было 0.8)
     

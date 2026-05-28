@@ -32,7 +32,8 @@ void GuitarPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
 {
     sampleRate = newSampleRate;
     
-    noteBufferSize = static_cast<int> (sampleRate * RECORD_SECONDS);
+    // Фиксированный буфер в сэмплах (не зависит от частоты дискретизации)
+    noteBufferSize = FIXED_BUFFER_SAMPLES;
     noteBuffer.resize (noteBufferSize, 0.0f);
     noteWritePosition = 0;
     isRecording = false;
@@ -48,9 +49,10 @@ void GuitarPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
     lockDuration = static_cast<int>(sampleRate * 0.5);  // 500 мс блокировки
 }
 
+
 void GuitarPitchDetector::reset()
 {
-    std::fill (noteBuffer.begin(), noteBuffer.end(), 0.0f);
+    // std::fill (noteBuffer.begin(), noteBuffer.end(), 0.0f);  // Убираем!
     noteWritePosition = 0;
     isRecording = false;
     samplesToRecord = 0;

@@ -49,13 +49,20 @@ private:
     int lockDuration;
     
     // Константы для гитары
-    static constexpr float MIN_FREQ = 80.0f;       // E2 (82.41 Hz)
+   /* static constexpr float MIN_FREQ = 80.0f;       // E2 (82.41 Hz)
     static constexpr float MAX_FREQ = 350.0f;      // E4 (329.63 Hz)
     static constexpr float MIN_CONFIDENCE = 0.5f;
     static constexpr float SILENCE_THRESHOLD = 0.0001f;
     static constexpr float RECORD_SECONDS = 0.5f;  // 500 мс для гитары
     //static constexpr float RECORD_SECONDS = 0.2f;  // 500 мс для гитары
-    
+    */
+   
+   static constexpr int FIXED_BUFFER_SAMPLES = 4096;  // Фиксированный буфер для любой частоты
+static constexpr float MIN_FREQ = 80.0f;    // E2 (82.41)
+static constexpr float MAX_FREQ = 350.0f;   // E4 (329.63)
+static constexpr float MIN_CONFIDENCE = 0.5f;
+static constexpr float SILENCE_THRESHOLD = 0.0001f;
+
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (GuitarPitchDetector)
 };

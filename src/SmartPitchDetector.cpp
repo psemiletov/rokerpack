@@ -41,15 +41,22 @@ void SmartPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
 }
 */
 
-
 void SmartPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
 {
     sampleRate = newSampleRate;
     
-    // Фиксированный размер буфера для анализа (6144 сэмплов)
-    constexpr int TARGET_ANALYSIS_SAMPLES = 6144;
+    // Адаптивный размер буфера: минимум 3 периода E1 (41.20 Гц)
+    constexpr float E1_FREQ = 41.20f;
+    constexpr int MIN_PERIODS = 3;
+    constexpr int MAX_BUFFER_SAMPLES = 8192;
+    constexpr int MIN_BUFFER_SAMPLES = 4096;
     
-    noteBufferSize = TARGET_ANALYSIS_SAMPLES;
+    int periodE1 = static_cast<int>(sampleRate / E1_FREQ);
+    int targetSamples = periodE1 * MIN_PERIODS;
+    
+    // Ограничиваем разумными пределами
+    noteBufferSize = std::clamp(targetSamples, MIN_BUFFER_SAMPLES, MAX_BUFFER_SAMPLES);
+    
     noteBuffer.resize (noteBufferSize, 0.0f);
     noteWritePosition = 0;
     isRecording = false;
@@ -60,7 +67,13 @@ void SmartPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
     confidence = 0.0f;
     noteDetected = false;
     currentNoteName = "--";
+    
+    // Отладочный вывод
+//  std::cout << "SmartPitchDetector::prepare: sampleRate=" << sampleRate 
+  //            << ", periodE1=" << periodE1 
+    //          << ", noteBufferSize=" << noteBufferSize << std::endl;
 }
+
 
 void SmartPitchDetector::reset()
 {
@@ -88,129 +101,6 @@ float SmartPitchDetector::parabolicInterpolation (const std::vector<float>& data
     return 0.5f * (a - c) / denominator;
 }
 
-/*
-float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
-{
-    int analysisSize = (int)buffer.size();
-    
-    if (analysisSize > 6144)
-        analysisSize = 6144;
-    
-    if (analysisSize < 256)
-        return 0.0f;
-    
-    // Ограничиваем диапазон лагов для баса (40-400 Hz)
-    int minLag = static_cast<int> (sampleRate / MAX_FREQ);  // ~110
-    int maxLag = static_cast<int> (sampleRate / MIN_FREQ);  // ~1102
-    
-    if (minLag < 2) minLag = 2;
-    if (maxLag > analysisSize / 2) maxLag = analysisSize / 2;
-    
-    // YIN алгоритм (только в ограниченном диапазоне)
-    std::vector<float> diff (maxLag + 1, 0.0f);
-    std::vector<float> cmndf (maxLag + 1, 1.0f);
-    
-    // Шаг 1: разностная функция только для нужных лагов
-    for (int tau = minLag; tau <= maxLag; ++tau)
-    {
-        float sum = 0.0f;
-        for (int i = 0; i < analysisSize - tau; ++i)
-        {
-            float delta = buffer[i] - buffer[i + tau];
-            sum += delta * delta;
-        }
-        diff[tau] = sum;
-    }
-    
-    // Шаг 2: кумулятивная нормализация
-    float runningSum = 0.0f;
-    for (int tau = minLag; tau <= maxLag; ++tau)
-    {
-        runningSum += diff[tau];
-        if (runningSum != 0.0f)
-            cmndf[tau] = diff[tau] * static_cast<float>(tau) / runningSum;
-        else
-            cmndf[tau] = 1.0f;
-    }
-    
-    // Шаг 3: поиск первого минимума ниже порога
-    float threshold = 0.15f;
-    int minIndex = -1;
-    
-    for (int tau = minLag + 1; tau < maxLag; ++tau)
-    {
-        if (cmndf[tau] < threshold &&
-            cmndf[tau] < cmndf[tau - 1] &&
-            cmndf[tau] < cmndf[tau + 1])
-        {
-            minIndex = tau;
-            break;
-        }
-    }
-    
-    // Если не нашли, ищем глобальный минимум
-    if (minIndex == -1)
-    {
-        float minValue = cmndf[minLag];
-        minIndex = minLag;
-        for (int tau = minLag + 1; tau <= maxLag; ++tau)
-        {
-            if (cmndf[tau] < minValue)
-            {
-                minValue = cmndf[tau];
-                minIndex = tau;
-            }
-        }
-    }
-    
-    // Интерполяция
-    float interpolatedTau = static_cast<float> (minIndex);
-    if (minIndex > minLag && minIndex < maxLag)
-    {
-        interpolatedTau += parabolicInterpolation (cmndf, minIndex);
-    }
-    
-    float confidenceValue = 1.0f - cmndf[minIndex];
-    confidence = confidenceValue;
-    
-   // std::cout << "YIN: minIndex=" << minIndex << ", interpolatedTau=" << interpolatedTau 
-     //         << ", confidence=" << confidenceValue << std::endl;
-    
-    if (interpolatedTau > 0.0f && confidenceValue > MIN_CONFIDENCE)
-    {
-        float frequency = static_cast<float> (sampleRate) / interpolatedTau;
-        
-        if (frequency >= MIN_FREQ && frequency <= MAX_FREQ)
-        {
-       //     std::cout << "YIN frequency: " << frequency << std::endl;
-            return frequency;
-        }
-        
-        // Октавная коррекция
-        if (frequency < MIN_FREQ && interpolatedTau > 0)
-        {
-            float higherFreq = frequency * 2.0f;
-            if (higherFreq >= MIN_FREQ && higherFreq <= MAX_FREQ)
-            {
-         //       std::cout << "YIN octave corrected (up): " << higherFreq << std::endl;
-                return higherFreq;
-            }
-        }
-        if (frequency > MAX_FREQ && interpolatedTau > 0)
-        {
-            float lowerFreq = frequency / 2.0f;
-            if (lowerFreq >= MIN_FREQ && lowerFreq <= MAX_FREQ)
-            {
-           //     std::cout << "YIN octave corrected (down): " << lowerFreq << std::endl;
-                return lowerFreq;
-            }
-        }
-    }
-    
-    return 0.0f;
-}
-*/
-
 float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
 {
     int analysisSize = (int)buffer.size();
@@ -224,10 +114,7 @@ float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
     if (minLag < 2) minLag = 2;
     if (maxLag > analysisSize / 2) maxLag = analysisSize / 2;
     
-    // Ограничиваем maxLag для ускорения (800 сэмплов достаточно для E1)
-    if (maxLag > 800) maxLag = 1100;
-    
-    // Шаг 1: разностная функция (оптимизированная вручную)
+    // Шаг 1: разностная функция (оптимизированная)
     std::vector<float> diff (maxLag + 1, 0.0f);
     
     const float* data = buffer.data();
@@ -238,7 +125,7 @@ float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
         float sum = 0.0f;
         int limit = size - tau;
         
-        // Разворачиваем цикл по 4 итерации за раз
+        // Разворачиваем цикл по 4
         int i = 0;
         for (; i + 3 < limit; i += 4)
         {
@@ -248,7 +135,6 @@ float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
             float d3 = data[i+3] - data[i+3 + tau];
             sum += d0*d0 + d1*d1 + d2*d2 + d3*d3;
         }
-        // Остаток
         for (; i < limit; ++i)
         {
             float delta = data[i] - data[i + tau];
@@ -338,6 +224,7 @@ float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
     
     return 0.0f;
 }
+
 
 juce::String SmartPitchDetector::frequencyToNoteName (float frequency)
 {
