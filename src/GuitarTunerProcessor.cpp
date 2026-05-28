@@ -158,6 +158,7 @@ juce::String GuitarTunerAudioProcessor::frequencyToNoteName (float frequency) co
     return juce::String (noteNames[noteIndex]) + juce::String (octave);
 }
 
+
 void GuitarTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;

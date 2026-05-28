@@ -9,7 +9,8 @@ constexpr int MAX_BASS_MIDI = 55;
 
 BassTunerAudioProcessor::BassTunerAudioProcessor()
     : AudioProcessor (BusesProperties().withInput  ("Input",  juce::AudioChannelSet::mono(), true)
-                                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
+//                                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true))
+                                           .withOutput ("Output", juce::AudioChannelSet::disabled()))
     , currentSampleRate (44100.0)
     , targetFrequency (0.0f)
     , centsDeviation (0.0f)
@@ -196,16 +197,18 @@ void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         }
     }
     
-    if (buffer.getNumChannels() > 1)
+   /* if (buffer.getNumChannels() > 1)
     {
         buffer.copyFrom (1, 0, buffer, 0, 0, numSamples);
-    }
+    }*/
 }
 
+/*
 void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused(buffer, midiMessages);
 }
+*/
 
 bool BassTunerAudioProcessor::hasEditor() const
 {

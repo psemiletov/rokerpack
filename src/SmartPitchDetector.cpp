@@ -22,6 +22,7 @@ SmartPitchDetector::~SmartPitchDetector()
 {
 }
 
+/*
 void SmartPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
 {
     sampleRate = newSampleRate;
@@ -38,10 +39,32 @@ void SmartPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
     noteDetected = false;
     currentNoteName = "--";
 }
+*/
+
+
+void SmartPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
+{
+    sampleRate = newSampleRate;
+    
+    // Фиксированный размер буфера для анализа (6144 сэмплов)
+    constexpr int TARGET_ANALYSIS_SAMPLES = 6144;
+    
+    noteBufferSize = TARGET_ANALYSIS_SAMPLES;
+    noteBuffer.resize (noteBufferSize, 0.0f);
+    noteWritePosition = 0;
+    isRecording = false;
+    samplesToRecord = 0;
+    
+    currentEnergy = 0.0f;
+    currentFrequency = 0.0f;
+    confidence = 0.0f;
+    noteDetected = false;
+    currentNoteName = "--";
+}
 
 void SmartPitchDetector::reset()
 {
-    std::fill (noteBuffer.begin(), noteBuffer.end(), 0.0f);
+   // std::fill (noteBuffer.begin(), noteBuffer.end(), 0.0f);
     noteWritePosition = 0;
     isRecording = false;
     samplesToRecord = 0;
@@ -65,9 +88,13 @@ float SmartPitchDetector::parabolicInterpolation (const std::vector<float>& data
     return 0.5f * (a - c) / denominator;
 }
 
+/*
 float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
 {
     int analysisSize = (int)buffer.size();
+    
+    if (analysisSize > 6144)
+        analysisSize = 6144;
     
     if (analysisSize < 256)
         return 0.0f;
@@ -182,6 +209,135 @@ float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
     
     return 0.0f;
 }
+*/
+
+float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
+{
+    int analysisSize = (int)buffer.size();
+    
+    if (analysisSize < 256)
+        return 0.0f;
+    
+    int minLag = static_cast<int> (sampleRate / MAX_FREQ);
+    int maxLag = static_cast<int> (sampleRate / MIN_FREQ);
+    
+    if (minLag < 2) minLag = 2;
+    if (maxLag > analysisSize / 2) maxLag = analysisSize / 2;
+    
+    // Ограничиваем maxLag для ускорения (800 сэмплов достаточно для E1)
+    if (maxLag > 800) maxLag = 1100;
+    
+    // Шаг 1: разностная функция (оптимизированная вручную)
+    std::vector<float> diff (maxLag + 1, 0.0f);
+    
+    const float* data = buffer.data();
+    int size = analysisSize;
+    
+    for (int tau = minLag; tau <= maxLag; ++tau)
+    {
+        float sum = 0.0f;
+        int limit = size - tau;
+        
+        // Разворачиваем цикл по 4 итерации за раз
+        int i = 0;
+        for (; i + 3 < limit; i += 4)
+        {
+            float d0 = data[i] - data[i + tau];
+            float d1 = data[i+1] - data[i+1 + tau];
+            float d2 = data[i+2] - data[i+2 + tau];
+            float d3 = data[i+3] - data[i+3 + tau];
+            sum += d0*d0 + d1*d1 + d2*d2 + d3*d3;
+        }
+        // Остаток
+        for (; i < limit; ++i)
+        {
+            float delta = data[i] - data[i + tau];
+            sum += delta * delta;
+        }
+        diff[tau] = sum;
+    }
+    
+    // Шаг 2: кумулятивная нормализация
+    std::vector<float> cmndf (maxLag + 1, 1.0f);
+    float runningSum = 0.0f;
+    for (int tau = minLag; tau <= maxLag; ++tau)
+    {
+        runningSum += diff[tau];
+        if (runningSum != 0.0f)
+            cmndf[tau] = diff[tau] * static_cast<float>(tau) / runningSum;
+        else
+            cmndf[tau] = 1.0f;
+    }
+    
+    // Шаг 3: поиск минимума
+    float threshold = 0.15f;
+    int minIndex = -1;
+    
+    for (int tau = minLag + 1; tau < maxLag; ++tau)
+    {
+        if (cmndf[tau] < threshold &&
+            cmndf[tau] < cmndf[tau - 1] &&
+            cmndf[tau] < cmndf[tau + 1])
+        {
+            minIndex = tau;
+            break;
+        }
+    }
+    
+    if (minIndex == -1)
+    {
+        float minValue = cmndf[minLag];
+        minIndex = minLag;
+        for (int tau = minLag + 1; tau <= maxLag; ++tau)
+        {
+            if (cmndf[tau] < minValue)
+            {
+                minValue = cmndf[tau];
+                minIndex = tau;
+            }
+        }
+    }
+    
+    // Интерполяция
+    float interpolatedTau = static_cast<float> (minIndex);
+    if (minIndex > minLag && minIndex < maxLag)
+    {
+        interpolatedTau += parabolicInterpolation (cmndf, minIndex);
+    }
+    
+    float confidenceValue = 1.0f - cmndf[minIndex];
+    confidence = confidenceValue;
+    
+    if (interpolatedTau > 0.0f && confidenceValue > MIN_CONFIDENCE)
+    {
+        float frequency = static_cast<float> (sampleRate) / interpolatedTau;
+        
+        if (frequency >= MIN_FREQ && frequency <= MAX_FREQ)
+        {
+            return frequency;
+        }
+        
+        // Октавная коррекция
+        if (frequency < MIN_FREQ && interpolatedTau > 0)
+        {
+            float higherFreq = frequency * 2.0f;
+            if (higherFreq >= MIN_FREQ && higherFreq <= MAX_FREQ)
+            {
+                return higherFreq;
+            }
+        }
+        if (frequency > MAX_FREQ && interpolatedTau > 0)
+        {
+            float lowerFreq = frequency / 2.0f;
+            if (lowerFreq >= MIN_FREQ && lowerFreq <= MAX_FREQ)
+            {
+                return lowerFreq;
+            }
+        }
+    }
+    
+    return 0.0f;
+}
 
 juce::String SmartPitchDetector::frequencyToNoteName (float frequency)
 {
@@ -202,6 +358,7 @@ juce::String SmartPitchDetector::frequencyToNoteName (float frequency)
     return juce::String (noteNames[noteIndex]) + juce::String (octave);
 }
 
+/*
 void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
 {
     if (buffer == nullptr || numSamples <= 0)
@@ -272,14 +429,82 @@ void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
         noteDetected = false;
     }
     
-    // Отладка (реже)
-    /*static int debugCounter = 0;
-    if (++debugCounter % 100 == 0)
+
+}
+*/
+
+void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
+{
+    if (buffer == nullptr || numSamples <= 0)
+        return;
+    
+    // Вычисляем энергию
+    float blockEnergy = 0.0f;
+    for (int i = 0; i < numSamples; ++i)
     {
-        std::cout << "=== Debug ===" << std::endl;
-        std::cout << "Recording: " << (isRecording ? "YES" : "NO") << std::endl;
-        std::cout << "Samples to record: " << samplesToRecord << std::endl;
-        std::cout << "Energy: " << currentEnergy << std::endl;
-        std::cout << "Note detected flag: " << (noteDetected.load() ? "YES" : "NO") << std::endl;
-    }*/
+        blockEnergy += buffer[i] * buffer[i];
+    }
+    blockEnergy /= numSamples;
+    currentEnergy = currentEnergy * 0.7f + blockEnergy * 0.3f;
+    
+    // Состояние: запись ноты
+    if (isRecording)
+    {
+        // Записываем в буфер
+        for (int i = 0; i < numSamples && samplesToRecord > 0; ++i)
+        {
+            if (noteWritePosition < noteBufferSize)
+            {
+                noteBuffer[static_cast<size_t> (noteWritePosition)] = buffer[i];
+                ++noteWritePosition;
+            }
+            --samplesToRecord;
+        }
+        
+        // Если записали нужное количество сэмплов, анализируем
+        if (samplesToRecord == 0)
+        {
+            // Измеряем время выполнения detectPitch
+            auto start = std::chrono::steady_clock::now();
+            
+            float frequency = detectPitch (noteBuffer);
+            
+            auto end = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            
+            static int logCounter = 0;
+            if (++logCounter % 3 == 0)
+            {
+                std::cout << "Bass detectPitch took " << elapsed << " microseconds, bufferSize=" << noteWritePosition << std::endl;
+            }
+            
+            if (frequency > 0.0f)
+            {
+                currentFrequency = frequency;
+                currentNoteName = frequencyToNoteName (frequency);
+                noteDetected = true;
+            }
+            else
+            {
+                noteDetected = false;
+            }
+            
+            // Сброс для следующей ноты
+            isRecording = false;
+            noteWritePosition = 0;
+        }
+        return;
+    }
+    
+    // Состояние: ожидание атаки
+    if (currentEnergy > SILENCE_THRESHOLD)
+    {
+        // Начинаем запись
+        isRecording = true;
+        samplesToRecord = noteBufferSize;
+        noteWritePosition = 0;
+        
+        // Сбрасываем флаг детекции
+        noteDetected = false;
+    }
 }

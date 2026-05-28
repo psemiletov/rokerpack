@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(RokerPack VERSION 1.0.0)
 
+
 cmake_policy(SET CMP0135 NEW)
 
 
@@ -340,6 +341,8 @@ target_sources(BassTuner PRIVATE
   src/SmartPitchDetector.cpp
   src/BronzaLookAndFeel.cpp
 )
+
+#target_compile_options(BassTuner PRIVATE -O2 -march=native)
 
 target_compile_definitions(BassTuner PRIVATE
   JUCE_JACK=0
