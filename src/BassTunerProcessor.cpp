@@ -143,6 +143,7 @@ juce::String BassTunerAudioProcessor::frequencyToNoteName (float frequency) cons
     return juce::String (noteNames[noteIndex]) + juce::String (octave);
 }
 
+
 void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -188,12 +189,10 @@ void BassTunerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         else
         {
             // Не обнуляем targetNote и stringNumber при тишине
-            {
                 juce::ScopedLock lock (stringDataLock);
                 detectedNote = "--";
                 // targetNote не обнуляем
                 // stringNumber не обнуляем
-            }
         }
     }
     

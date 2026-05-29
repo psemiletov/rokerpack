@@ -22,24 +22,6 @@ SmartPitchDetector::~SmartPitchDetector()
 {
 }
 
-/*
-void SmartPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
-{
-    sampleRate = newSampleRate;
-    
-    noteBufferSize = static_cast<int> (sampleRate * RECORD_SECONDS);
-    noteBuffer.resize (noteBufferSize, 0.0f);
-    noteWritePosition = 0;
-    isRecording = false;
-    samplesToRecord = 0;
-    
-    currentEnergy = 0.0f;
-    currentFrequency = 0.0f;
-    confidence = 0.0f;
-    noteDetected = false;
-    currentNoteName = "--";
-}
-*/
 
 void SmartPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
 {
@@ -245,80 +227,6 @@ juce::String SmartPitchDetector::frequencyToNoteName (float frequency)
     return juce::String (noteNames[noteIndex]) + juce::String (octave);
 }
 
-/*
-void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
-{
-    if (buffer == nullptr || numSamples <= 0)
-        return;
-    
-    // Вычисляем энергию
-    float blockEnergy = 0.0f;
-    for (int i = 0; i < numSamples; ++i)
-    {
-        blockEnergy += buffer[i] * buffer[i];
-    }
-    blockEnergy /= numSamples;
-    currentEnergy = currentEnergy * 0.7f + blockEnergy * 0.3f;
-    
-    // Состояние: запись ноты
-    if (isRecording)
-    {
-        // Записываем в буфер
-        for (int i = 0; i < numSamples && samplesToRecord > 0; ++i)
-        {
-            if (noteWritePosition < noteBufferSize)
-            {
-                noteBuffer[static_cast<size_t> (noteWritePosition)] = buffer[i];
-                ++noteWritePosition;
-            }
-            --samplesToRecord;
-        }
-        
-        // Если записали нужное количество сэмплов, анализируем
-        if (samplesToRecord == 0)
-        {
-            //std::cout << "=== Recording complete! Analyzing " << noteWritePosition << " samples ===" << std::endl;
-            
-            float frequency = detectPitch (noteBuffer);
-            
-            if (frequency > 0.0f)
-            {
-                currentFrequency = frequency;
-                currentNoteName = frequencyToNoteName (frequency);
-                noteDetected = true;
-              //  std::cout << "Note detected: " << currentNoteName << " at " << frequency << " Hz" << std::endl;
-            }
-            else
-            {
-                noteDetected = false;
-              //  std::cout << "No note detected" << std::endl;
-            }
-            
-            // Сброс для следующей ноты
-            isRecording = false;
-            noteWritePosition = 0;
-        }
-        return;
-    }
-    
-    // Состояние: ожидание атаки
-    if (currentEnergy > SILENCE_THRESHOLD)
-    {
-//        std::cout << "=== ONSET DETECTED! Recording " << noteBufferSize << " samples ===" << std::endl;
-  //      std::cout << "Energy: " << currentEnergy << std::endl;
-        
-        // Начинаем запись
-        isRecording = true;
-        samplesToRecord = noteBufferSize;
-        noteWritePosition = 0;
-        
-        // Сбрасываем флаг детекции
-        noteDetected = false;
-    }
-    
-
-}
-*/
 
 void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
 {
@@ -359,12 +267,12 @@ void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
             auto end = std::chrono::steady_clock::now();
             auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
             
-            static int logCounter = 0;
+ /*           static int logCounter = 0;
             if (++logCounter % 3 == 0)
             {
                 std::cout << "Bass detectPitch took " << elapsed << " microseconds, bufferSize=" << noteWritePosition << std::endl;
             }
-            
+   */         
             if (frequency > 0.0f)
             {
                 currentFrequency = frequency;
