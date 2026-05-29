@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(RokerPack VERSION 1.0.0)
+project(RokerPack VERSION 1.1.0)
 
 
 cmake_policy(SET CMP0135 NEW)
