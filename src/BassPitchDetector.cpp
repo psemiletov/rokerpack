@@ -1,108 +1,76 @@
 #include "BassPitchDetector.h"
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <cmath>
 
-// Определение частот струн бас-гитары
-const BassPitchDetector::StringInfo BassPitchDetector::STRINGS[BassPitchDetector::NUM_BASS_STRINGS] = {
-    { 41.20f,  "E1" },   // 4-я (самая толстая)
-    { 55.00f,  "A1" },   // 3-я
-    { 73.42f,  "D2" },   // 2-я
-    { 98.00f,  "G2" }    // 1-я (самая тонкая)
-};
-
-BassPitchDetector::BassPitchDetector()
-    : sampleRate (44100.0)
-    , blockSize (2048)
-    , writePosition (0)
-    , minLag (0)
-    , maxLag (0)
-    , silenceThreshold (0.008f)
-    , lastFrequency (0.0f)
-    , currentLevel (0.0f)
-    , minFreq (38.0f)
-    , maxFreq (400.0f)
-    , samplesSinceLastAnalysis (0)
-    , analysisInterval (1024)
-    , stableFrequency (0.0f)
-    , stableFrames (0)
-    , silenceFrames (0)
-    , newStringFrames (0)
+SmartPitchDetector::SmartPitchDetector()
+    : noteBufferSize (0)
+    , noteWritePosition (0)
+    , isRecording (false)
+    , samplesToRecord (0)
+    , sampleRate (44100.0)
+    , currentEnergy (0.0f)
+    , currentFrequency (0.0f)
+    , confidence (0.0f)
+    , noteDetected (false)
+    , currentNoteName ("--")
 {
 }
 
-BassPitchDetector::~BassPitchDetector()
+SmartPitchDetector::~SmartPitchDetector()
 {
 }
 
-void BassPitchDetector::prepare (double newSampleRate, int newBlockSize)
+
+void SmartPitchDetector::prepare (double newSampleRate, int samplesPerBlock)
 {
     sampleRate = newSampleRate;
-    blockSize = newBlockSize;
     
-    int minBlockSize = static_cast<int> (sampleRate / minFreq) * 2;
-    blockSize = std::max (newBlockSize, minBlockSize);
-    blockSize = std::min (blockSize, 4096);
+    // Адаптивный размер буфера: минимум 3 периода E1 (41.20 Гц)
+    constexpr float E1_FREQ = 41.20f;
+    constexpr int MIN_PERIODS = 3;
+    constexpr int MAX_BUFFER_SAMPLES = 8192;
+    constexpr int MIN_BUFFER_SAMPLES = 4096;
     
-    ringBuffer.clear();
-    ringBuffer.resize (static_cast<size_t> (blockSize * 2), 0.0f);
+    int periodE1 = static_cast<int>(sampleRate / E1_FREQ);
+    int targetSamples = periodE1 * MIN_PERIODS;
     
-    analysisBuffer.clear();
-    analysisBuffer.resize (static_cast<size_t> (blockSize), 0.0f);
+    // Ограничиваем разумными пределами
+    noteBufferSize = std::clamp(targetSamples, MIN_BUFFER_SAMPLES, MAX_BUFFER_SAMPLES);
     
-    nsdfBuffer.clear();
-    nsdfBuffer.resize (static_cast<size_t> (blockSize), 0.0f);
+    noteBuffer.resize (noteBufferSize, 0.0f);
+    noteWritePosition = 0;
+    isRecording = false;
+    samplesToRecord = 0;
     
-    minLag = static_cast<int> (sampleRate / maxFreq);
-    maxLag = static_cast<int> (sampleRate / minFreq);
-    minLag = std::max (2, minLag);
-    maxLag = std::min (blockSize / 2, maxLag);
+    currentEnergy = 0.0f;
+    currentFrequency = 0.0f;
+    confidence = 0.0f;
+    noteDetected = false;
+    currentNoteName = "--";
     
-    analysisInterval = static_cast<int> (sampleRate / 30);
-    analysisInterval = std::max (512, std::min (2048, analysisInterval));
-    
-    writePosition = 0;
-    samplesSinceLastAnalysis = 0;
-    lastFrequency = 0.0f;
-    currentLevel = 0.0f;
-    stableFrequency = 0.0f;
-    stableFrames = 0;
-    silenceFrames = 0;
-    newStringFrames = 0;
+    // Отладочный вывод
+//  std::cout << "SmartPitchDetector::prepare: sampleRate=" << sampleRate 
+  //            << ", periodE1=" << periodE1 
+    //          << ", noteBufferSize=" << noteBufferSize << std::endl;
 }
 
-void BassPitchDetector::reset()
+
+void SmartPitchDetector::reset()
 {
-    std::fill (ringBuffer.begin(), ringBuffer.end(), 0.0f);
-    writePosition = 0;
-    samplesSinceLastAnalysis = 0;
-    lastFrequency = 0.0f;
-    currentLevel = 0.0f;
-    stableFrequency = 0.0f;
-    stableFrames = 0;
-    silenceFrames = 0;
-    newStringFrames = 0;
+   // std::fill (noteBuffer.begin(), noteBuffer.end(), 0.0f);
+    noteWritePosition = 0;
+    isRecording = false;
+    samplesToRecord = 0;
+    currentEnergy = 0.0f;
+    currentFrequency = 0.0f;
+    confidence = 0.0f;
+    noteDetected = false;
+    currentNoteName = "--";
 }
 
-int BassPitchDetector::findClosestString (float frequency) const
-{
-    if (frequency <= 0.0f)
-        return -1;
-    
-    int closestIndex = 0;
-    float minDiff = std::abs (frequency - STRINGS[0].frequency);
-    
-    for (int i = 1; i < NUM_BASS_STRINGS; ++i)
-    {
-        float diff = std::abs (frequency - STRINGS[i].frequency);
-        if (diff < minDiff)
-        {
-            minDiff = diff;
-            closestIndex = i;
-        }
-    }
-    
-    return closestIndex;
-}
-
-float BassPitchDetector::parabolicInterpolation (const std::vector<float>& data, int index)
+float SmartPitchDetector::parabolicInterpolation (const std::vector<float>& data, int index)
 {
     float a = data[static_cast<size_t> (index - 1)];
     float b = data[static_cast<size_t> (index)];
@@ -115,195 +83,223 @@ float BassPitchDetector::parabolicInterpolation (const std::vector<float>& data,
     return 0.5f * (a - c) / denominator;
 }
 
-float BassPitchDetector::detectPitch (const std::vector<float>& buffer)
+float SmartPitchDetector::detectPitch (const std::vector<float>& buffer)
 {
-    for (int tau = minLag; tau <= maxLag; ++tau)
-    {
-        float numerator = 0.0f;
-        float denominator = 0.0f;
-        int limit = blockSize - tau;
-        
-        for (int i = 0; i < limit; ++i)
-        {
-            numerator += buffer[i] * buffer[i + tau];
-            denominator += buffer[i] * buffer[i] + buffer[i + tau] * buffer[i + tau];
-        }
-        
-        if (denominator > 0.0f)
-            nsdfBuffer[tau] = 2.0f * numerator / denominator;
-        else
-            nsdfBuffer[tau] = 0.0f;
-    }
+    int analysisSize = (int)buffer.size();
     
-    int bestLag = minLag;
-    float maxValue = nsdfBuffer[minLag];
-    
-    for (int tau = minLag + 1; tau <= maxLag; ++tau)
-    {
-        if (nsdfBuffer[tau] > maxValue)
-        {
-            maxValue = nsdfBuffer[tau];
-            bestLag = tau;
-        }
-    }
-    
-    if (maxValue < 0.45f)
+    if (analysisSize < 256)
         return 0.0f;
     
-    float interpolatedLag = static_cast<float> (bestLag);
-    if (bestLag > minLag && bestLag < maxLag)
-        interpolatedLag += parabolicInterpolation (nsdfBuffer, bestLag);
+    int minLag = static_cast<int> (sampleRate / MAX_FREQ);
+    int maxLag = static_cast<int> (sampleRate / MIN_FREQ);
     
-    if (interpolatedLag > 0.0f)
+    if (minLag < 2) minLag = 2;
+    if (maxLag > analysisSize / 2) maxLag = analysisSize / 2;
+    
+    // Шаг 1: разностная функция (оптимизированная)
+    std::vector<float> diff (maxLag + 1, 0.0f);
+    
+    const float* data = buffer.data();
+    int size = analysisSize;
+    
+    for (int tau = minLag; tau <= maxLag; ++tau)
     {
-        float frequency = static_cast<float> (sampleRate) / interpolatedLag;
+        float sum = 0.0f;
+        int limit = size - tau;
         
-        if (frequency < minFreq)
-            return 0.0f;
-        if (frequency > maxFreq)
+        // Разворачиваем цикл по 4
+        int i = 0;
+        for (; i + 3 < limit; i += 4)
         {
-            float subFreq = frequency / 2.0f;
-            if (subFreq >= minFreq && subFreq <= maxFreq)
-                return subFreq;
-            return 0.0f;
+            float d0 = data[i] - data[i + tau];
+            float d1 = data[i+1] - data[i+1 + tau];
+            float d2 = data[i+2] - data[i+2 + tau];
+            float d3 = data[i+3] - data[i+3 + tau];
+            sum += d0*d0 + d1*d1 + d2*d2 + d3*d3;
+        }
+        for (; i < limit; ++i)
+        {
+            float delta = data[i] - data[i + tau];
+            sum += delta * delta;
+        }
+        diff[tau] = sum;
+    }
+    
+    // Шаг 2: кумулятивная нормализация
+    std::vector<float> cmndf (maxLag + 1, 1.0f);
+    float runningSum = 0.0f;
+    for (int tau = minLag; tau <= maxLag; ++tau)
+    {
+        runningSum += diff[tau];
+        if (runningSum != 0.0f)
+            cmndf[tau] = diff[tau] * static_cast<float>(tau) / runningSum;
+        else
+            cmndf[tau] = 1.0f;
+    }
+    
+    // Шаг 3: поиск минимума
+    float threshold = 0.15f;
+    int minIndex = -1;
+    
+    for (int tau = minLag + 1; tau < maxLag; ++tau)
+    {
+        if (cmndf[tau] < threshold &&
+            cmndf[tau] < cmndf[tau - 1] &&
+            cmndf[tau] < cmndf[tau + 1])
+        {
+            minIndex = tau;
+            break;
+        }
+    }
+    
+    if (minIndex == -1)
+    {
+        float minValue = cmndf[minLag];
+        minIndex = minLag;
+        for (int tau = minLag + 1; tau <= maxLag; ++tau)
+        {
+            if (cmndf[tau] < minValue)
+            {
+                minValue = cmndf[tau];
+                minIndex = tau;
+            }
+        }
+    }
+    
+    // Интерполяция
+    float interpolatedTau = static_cast<float> (minIndex);
+    if (minIndex > minLag && minIndex < maxLag)
+    {
+        interpolatedTau += parabolicInterpolation (cmndf, minIndex);
+    }
+    
+    float confidenceValue = 1.0f - cmndf[minIndex];
+    confidence = confidenceValue;
+    
+    if (interpolatedTau > 0.0f && confidenceValue > MIN_CONFIDENCE)
+    {
+        float frequency = static_cast<float> (sampleRate) / interpolatedTau;
+        
+        if (frequency >= MIN_FREQ && frequency <= MAX_FREQ)
+        {
+            return frequency;
         }
         
-        return frequency;
+        // Октавная коррекция
+        if (frequency < MIN_FREQ && interpolatedTau > 0)
+        {
+            float higherFreq = frequency * 2.0f;
+            if (higherFreq >= MIN_FREQ && higherFreq <= MAX_FREQ)
+            {
+                return higherFreq;
+            }
+        }
+        if (frequency > MAX_FREQ && interpolatedTau > 0)
+        {
+            float lowerFreq = frequency / 2.0f;
+            if (lowerFreq >= MIN_FREQ && lowerFreq <= MAX_FREQ)
+            {
+                return lowerFreq;
+            }
+        }
     }
     
     return 0.0f;
 }
 
 
+juce::String SmartPitchDetector::frequencyToNoteName (float frequency)
+{
+    if (frequency <= 0.0f)
+        return "--";
+    
+    const float A4_FREQ = 440.0f;
+    const int A4_MIDI = 69;
+    const float SEMITONES_PER_OCTAVE = 12.0f;
+    
+    float midiFloat = A4_MIDI + SEMITONES_PER_OCTAVE * std::log2 (frequency / A4_FREQ);
+    int midiNote = static_cast<int> (std::round (midiFloat));
+    
+    const char* noteNames[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+    int octave = (midiNote / 12) - 1;
+    int noteIndex = midiNote % 12;
+    
+    return juce::String (noteNames[noteIndex]) + juce::String (octave);
+}
 
-float BassPitchDetector::processSamples (const float* buffer, int numSamples)
+
+void SmartPitchDetector::processSamples (const float* buffer, int numSamples)
 {
     if (buffer == nullptr || numSamples <= 0)
-        return lastFrequency.load();
+        return;
     
+    // Вычисляем энергию
+    float blockEnergy = 0.0f;
     for (int i = 0; i < numSamples; ++i)
     {
-        ringBuffer[static_cast<size_t> (writePosition)] = buffer[i];
-        ++writePosition;
-        if (writePosition >= static_cast<int> (ringBuffer.size()))
-            writePosition = 0;
+        blockEnergy += buffer[i] * buffer[i];
     }
+    blockEnergy /= numSamples;
+    currentEnergy = currentEnergy * 0.7f + blockEnergy * 0.3f;
     
-    samplesSinceLastAnalysis += numSamples;
-    
-    if (samplesSinceLastAnalysis >= analysisInterval)
+    // Состояние: запись ноты
+    if (isRecording)
     {
-        samplesSinceLastAnalysis = 0;
-        
-        if (writePosition < blockSize)
+        // Записываем в буфер
+        for (int i = 0; i < numSamples && samplesToRecord > 0; ++i)
         {
-            int available = static_cast<int> (ringBuffer.size()) - writePosition;
-            if (available < blockSize)
-                return lastFrequency.load();
-        }
-        
-        int readPos = writePosition - blockSize;
-        if (readPos < 0)
-            readPos += static_cast<int> (ringBuffer.size());
-        
-        float maxAmplitude = 0.0f;
-        for (int i = 0; i < blockSize; ++i)
-        {
-            analysisBuffer[static_cast<size_t> (i)] = ringBuffer[static_cast<size_t> (readPos)];
-            float absVal = std::abs (analysisBuffer[static_cast<size_t> (i)]);
-            if (absVal > maxAmplitude)
-                maxAmplitude = absVal;
-            ++readPos;
-            if (readPos >= static_cast<int> (ringBuffer.size()))
-                readPos = 0;
-        }
-        
-        currentLevel = maxAmplitude;
-        
-        // Тишина - сброс всего
-        if (maxAmplitude < silenceThreshold)
-        {
-            silenceFrames++;
-            if (silenceFrames > maxSilenceFrames)
+            if (noteWritePosition < noteBufferSize)
             {
-                stableFrequency = 0.0f;
-                lastFrequency = 0.0f;
-                stableFrames = 0;
-                newStringFrames = 0;
+                noteBuffer[static_cast<size_t> (noteWritePosition)] = buffer[i];
+                ++noteWritePosition;
             }
-            return lastFrequency.load();
+            --samplesToRecord;
         }
         
-        silenceFrames = 0;
-        
-        float rawFrequency = detectPitch (analysisBuffer);
-        
-        if (rawFrequency <= 0.0f)
-            return lastFrequency.load();
-        
-        int closestStringIndex = findClosestString (rawFrequency);
-        
-        // Если нет стабильной частоты - инициализируем
-        if (stableFrequency <= 0.0f && closestStringIndex >= 0)
+        // Если записали нужное количество сэмплов, анализируем
+        if (samplesToRecord == 0)
         {
-            stableFrequency = rawFrequency;
-            lastFrequency = rawFrequency;
-            stableFrames = requiredStableFrames;
-            return lastFrequency.load();
-        }
-        
-        // Проверяем, нужно ли переключиться на другую струну
-        int currentStringIndex = findClosestString (stableFrequency);
-        bool isDifferentString = (closestStringIndex != currentStringIndex);
-        
-        if (isDifferentString)
-        {
-            // Другая струна - накапливаем подтверждения
-            newStringFrames++;
-            if (newStringFrames >= 3)
+            // Измеряем время выполнения detectPitch
+            auto start = std::chrono::steady_clock::now();
+            
+            float frequency = detectPitch (noteBuffer);
+            
+            auto end = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            
+ /*           static int logCounter = 0;
+            if (++logCounter % 3 == 0)
             {
-                // Переключаемся
-                stableFrequency = rawFrequency;
-                lastFrequency = rawFrequency;
-                stableFrames = requiredStableFrames;
-                newStringFrames = 0;
+                std::cout << "Bass detectPitch took " << elapsed << " microseconds, bufferSize=" << noteWritePosition << std::endl;
+            }
+   */         
+            if (frequency > 0.0f)
+            {
+                currentFrequency = frequency;
+                currentNoteName = frequencyToNoteName (frequency);
+                noteDetected = true;
             }
             else
             {
-                // Пока не переключаемся, показываем старую частоту
-                lastFrequency = stableFrequency;
+                noteDetected = false;
             }
-            return lastFrequency.load();
+            
+            // Сброс для следующей ноты
+            isRecording = false;
+            noteWritePosition = 0;
         }
-        
-        // Та же струна - сбрасываем счётчик новой струны
-        newStringFrames = 0;
-        
-        // Проверяем, стабильна ли частота
-        bool isStable = std::abs(rawFrequency - stableFrequency) < 7.0f;
-        
-        if (isStable)
-        {
-            stableFrames++;
-            if (stableFrames >= requiredStableFrames)
-            {
-                // Плавное обновление
-                stableFrequency = stableFrequency * 0.7f + rawFrequency * 0.3f;
-                lastFrequency = stableFrequency;
-                stableFrames = requiredStableFrames;
-            }
-            else
-            {
-                lastFrequency = stableFrequency;
-            }
-        }
-        else
-        {
-            // Нестабильно - сбрасываем счётчик, но показываем старую частоту
-            stableFrames = 0;
-            lastFrequency = stableFrequency;
-        }
+        return;
     }
     
-    return lastFrequency.load();
+    // Состояние: ожидание атаки
+    if (currentEnergy > SILENCE_THRESHOLD)
+    {
+        // Начинаем запись
+        isRecording = true;
+        samplesToRecord = noteBufferSize;
+        noteWritePosition = 0;
+        
+        // Сбрасываем флаг детекции
+        noteDetected = false;
+    }
 }

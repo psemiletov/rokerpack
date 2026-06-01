@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(RokerPack VERSION 1.1.0)
+project(RokerPack VERSION 1.1.1)
 
 
 cmake_policy(SET CMP0135 NEW)
@@ -38,7 +38,7 @@ FetchContent_MakeAvailable(juce)
 
 # ==================== BRONZA PLUGIN ====================
 juce_add_plugin(Bronza
-  VERSION 1.1.0
+  VERSION 1.1.1
   COMPANY_NAME "Semiletov"
   PRODUCT_NAME "Bronza"
   PLUGIN_MANUFACTURER_CODE Smlt
@@ -79,7 +79,7 @@ target_link_libraries(Bronza PRIVATE
 
 # ==================== GRELKA PLUGIN ====================
 juce_add_plugin(Grelka
-  VERSION 1.1.0
+  VERSION 1.1.1
   COMPANY_NAME "Semiletov"
   PRODUCT_NAME "Grelka"
   PLUGIN_MANUFACTURER_CODE Smlt
@@ -119,7 +119,7 @@ target_link_libraries(Grelka PRIVATE
 
 # ==================== METALLUGA PLUGIN ====================
 juce_add_plugin(Metalluga
-  VERSION 1.1.0
+  VERSION 1.1.1
   COMPANY_NAME "Semiletov"
   PRODUCT_NAME "Metalluga"
   PLUGIN_MANUFACTURER_CODE Smlt
@@ -159,7 +159,7 @@ target_link_libraries(Metalluga PRIVATE
 
 # ==================== CHARM PLUGIN ====================
 juce_add_plugin(Charm
-  VERSION 1.1.0
+  VERSION 1.1.1
   COMPANY_NAME "Semiletov"
   PRODUCT_NAME "Charm"
   PLUGIN_MANUFACTURER_CODE Smlt
@@ -198,7 +198,7 @@ target_link_libraries(Charm PRIVATE
 
 # ==================== TEMBR PLUGIN ====================
 juce_add_plugin(Tembr
-  VERSION 1.1.0
+  VERSION 1.1.1
   COMPANY_NAME "Semiletov"
   PRODUCT_NAME "Tembr"
   PLUGIN_MANUFACTURER_CODE Smlt
@@ -237,7 +237,7 @@ target_link_libraries(Tembr PRIVATE
 
 # ==================== MISTRAL PLUGIN ====================
 juce_add_plugin(Mistral
-  VERSION 1.1.0
+  VERSION 1.1.1
   COMPANY_NAME "Semiletov"
   PRODUCT_NAME "Mistral"
   PLUGIN_MANUFACTURER_CODE Smlt
@@ -275,7 +275,7 @@ target_link_libraries(Mistral PRIVATE
 
 # ==================== GUITAR TUNER PLUGIN ====================
 juce_add_plugin(GuitarTuner
-  VERSION 1.1.0
+  VERSION 1.1.1
   COMPANY_NAME "Semiletov"
   PRODUCT_NAME "GuitarTuner"
   PLUGIN_MANUFACTURER_CODE Smlt
@@ -318,7 +318,7 @@ target_link_libraries(GuitarTuner PRIVATE
 
 # ==================== BASS TUNER PLUGIN ====================
 juce_add_plugin(BassTuner
-  VERSION 1.1.0
+  VERSION 1.1.1
   COMPANY_NAME "Semiletov"
   PRODUCT_NAME "BassTuner"
   PLUGIN_MANUFACTURER_CODE Smlt
@@ -338,7 +338,7 @@ target_sources(BassTuner PRIVATE
   src/BassTunerEditor.cpp
   src/BassStringsPanel.cpp
   src/MeterPanel.cpp
-  src/SmartPitchDetector.cpp
+  src/BassPitchDetector.cpp
   src/BronzaLookAndFeel.cpp
 )
 

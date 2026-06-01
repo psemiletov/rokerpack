@@ -3,64 +3,55 @@
 #include <vector>
 #include <atomic>
 #include <cmath>
-#include <algorithm>
 
-class BassPitchDetector
+class SmartPitchDetector
 {
 public:
-    BassPitchDetector();
-    ~BassPitchDetector();
+    SmartPitchDetector();
+    ~SmartPitchDetector();
     
-    void prepare (double sampleRate, int blockSize);
+    void prepare (double sampleRate, int samplesPerBlock);
     void reset();
     
-    float processSamples (const float* buffer, int numSamples);
-    float getLastFrequency() const { return lastFrequency.load(); }
-    float getCurrentLevel() const { return currentLevel.load(); }
-    void setSilenceThreshold (float threshold) { silenceThreshold = threshold; }
+    void processSamples (const float* buffer, int numSamples);
+    
+    float getCurrentFrequency() const { return currentFrequency.load(); }
+    float getConfidence() const { return confidence.load(); }
+    bool isNoteDetected() const { return noteDetected.load(); }
+    juce::String getCurrentNoteName() const { return currentNoteName; }
+    void clearNoteDetected() { noteDetected = false; }
 
 private:
     float detectPitch (const std::vector<float>& buffer);
     float parabolicInterpolation (const std::vector<float>& data, int index);
-    int findClosestString (float frequency) const;
+    juce::String frequencyToNoteName (float frequency);
     
-    std::vector<float> ringBuffer;
-    std::vector<float> analysisBuffer;
-    std::vector<float> nsdfBuffer;
+    // Буфер для записи ноты
+    std::vector<float> noteBuffer;
+    int noteBufferSize;
+    int noteWritePosition;
+    bool isRecording;
+    int samplesToRecord;
     
-    std::atomic<float> lastFrequency;
-    std::atomic<float> currentLevel;
+    // Результаты
+    std::atomic<float> currentFrequency;
+    std::atomic<float> confidence;
+    std::atomic<bool> noteDetected;
+    juce::String currentNoteName;
     
+    // Параметры
     double sampleRate;
-    int blockSize;
-    int writePosition;
-    int minLag;
-    int maxLag;
-    float silenceThreshold;
+    float currentEnergy;
     
-    float minFreq;
-    float maxFreq;
+    // Константы
+    static constexpr float MIN_FREQ = 40.0f;
+    static constexpr float MAX_FREQ = 400.0f;
+    static constexpr float MIN_CONFIDENCE = 0.5f;
+    static constexpr float SILENCE_THRESHOLD = 0.0001f;
+        
     
-    int samplesSinceLastAnalysis;
-    int analysisInterval;
+  //  static constexpr float RECORD_SECONDS = 0.8f;   // 800 мс (было 1.5)
+  //  static constexpr float RECORD_SECONDS = 0.35f;   // 350 мс (было 0.8)
     
-    // Структура струн для баса
-    struct StringInfo
-    {
-        float frequency;
-        const char* noteName;
-    };
-    
-    static constexpr int NUM_BASS_STRINGS = 4;
-    static const StringInfo STRINGS[NUM_BASS_STRINGS];
-    
-    // --- Логика стабилизации ---
-    float stableFrequency;
-    int stableFrames;
-    int silenceFrames;
-    int newStringFrames;          // счётчик для новой струны
-    const int requiredStableFrames = 4;
-    const int maxSilenceFrames = 6;
-    
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BassPitchDetector)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SmartPitchDetector)
 };

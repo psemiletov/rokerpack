@@ -1,7 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include "SmartPitchDetector.h"
+#include "BassPitchDetector.h"
 
 constexpr int NUM_BASS_STRINGS = 4;
 

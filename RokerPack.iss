@@ -4,7 +4,7 @@
 [Setup]
 AppId=RokerPack
 AppName=RokerPack
-AppVersion=1.0.0
+AppVersion=1.1.1
 AppPublisher=Semiletov
 AppPublisherURL=https://github.com/psemiletov/rokerpack
 AppSupportURL=https://github.com/psemiletov/rokerpack
