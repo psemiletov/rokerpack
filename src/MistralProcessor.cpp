@@ -34,7 +34,7 @@ void MistralAudioProcessor::releaseResources()
 {
     delayBuffer.clear();
 }
-
+/*
 void MistralAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -100,6 +100,170 @@ void MistralAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
             writePosition = 0;
     }
 }
+*/
+
+/*
+void MistralAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+{
+    juce::ScopedNoDenormals noDenormals;
+    
+    float targetRate = apvts.getRawParameterValue("rate")->load();
+    float targetDepth = apvts.getRawParameterValue("depth")->load();
+    float targetFeedback = apvts.getRawParameterValue("feedback")->load();
+    
+    targetFeedback = juce::jmin(0.9f, targetFeedback);
+    
+    // Инициализация сглаженных параметров при первом вызове
+    static float smoothRate = targetRate;
+    static float smoothDepth = targetDepth;
+    static float smoothFeedback = targetFeedback;
+    
+    // Коэффициент сглаживания (чем меньше, тем плавнее, но медленнее реакция)
+    const float smoothing = 0.995f;  // Быстрая, но плавная реакция (~1 мс)
+    
+    // Плавное обновление параметров
+    smoothRate = smoothRate * smoothing + targetRate * (1.0f - smoothing);
+    smoothDepth = smoothDepth * smoothing + targetDepth * (1.0f - smoothing);
+    smoothFeedback = smoothFeedback * smoothing + targetFeedback * (1.0f - smoothing);
+    
+    float rate = smoothRate;
+    float depth = smoothDepth;
+    float feedback = smoothFeedback;
+    
+    float lfoFreq = 0.1f + rate * 4.9f;
+    
+    float minDelayMs = 0.5f;
+    float maxDelayMs = 8.0f;
+    float delayRangeMs = maxDelayMs - minDelayMs;
+    
+    int numSamples = buffer.getNumSamples();
+    int numChannels = buffer.getNumChannels();
+    
+    for (int sample = 0; sample < numSamples; ++sample)
+    {
+        float lfo = std::sin(phase);
+        lfo = (lfo + 1.0f) / 2.0f;
+        
+        phase += 2.0f * juce::MathConstants<float>::pi * lfoFreq / sampleRate;
+        if (phase >= juce::MathConstants<float>::twoPi)
+            phase -= juce::MathConstants<float>::twoPi;
+        
+        for (int channel = 0; channel < numChannels; ++channel)
+        {
+            float delayMs = minDelayMs + lfo * depth * delayRangeMs;
+            float delaySamples = delayMs * sampleRate / 1000.0f;
+            
+            float* channelData = buffer.getWritePointer(channel);
+            float input = channelData[sample];
+            
+            float readPos = (float)writePosition - delaySamples;
+            if (readPos < 0) readPos += maxDelaySamples;
+            
+            int readPosInt = (int)readPos;
+            float frac = readPos - readPosInt;
+            int readPosNext = readPosInt + 1;
+            if (readPosNext >= maxDelaySamples) readPosNext = 0;
+            
+            float delayed = delayBuffer.getSample(channel, readPosInt) * (1.0f - frac) +
+                            delayBuffer.getSample(channel, readPosNext) * frac;
+            
+            float writeValue = input + delayed * feedback;
+            writeValue = juce::jlimit(-1.0f, 1.0f, writeValue);
+            delayBuffer.setSample(channel, writePosition, writeValue);
+            
+            float output = input * (1.0f - depth) + delayed * depth;
+            
+            channelData[sample] = output;
+        }
+        
+        writePosition++;
+        if (writePosition >= maxDelaySamples)
+            writePosition = 0;
+    }
+}
+*/
+
+void MistralAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+{
+    juce::ScopedNoDenormals noDenormals;
+    
+    float targetRate = apvts.getRawParameterValue("rate")->load();
+    float targetDepth = apvts.getRawParameterValue("depth")->load();
+    float targetFeedback = apvts.getRawParameterValue("feedback")->load();
+    targetFeedback = juce::jmin(0.9f, targetFeedback);
+    
+    static float smoothRate = targetRate;
+    static float smoothDepth = targetDepth;
+    static float smoothFeedback = targetFeedback;
+    
+    // Плавное сглаживание (без адаптации для простоты)
+    const float smoothing = 0.995f;
+    smoothRate = smoothRate * smoothing + targetRate * (1.0f - smoothing);
+    smoothDepth = smoothDepth * smoothing + targetDepth * (1.0f - smoothing);
+    smoothFeedback = smoothFeedback * smoothing + targetFeedback * (1.0f - smoothing);
+    
+    float rate = smoothRate;
+    float depth = smoothDepth;
+    float feedback = smoothFeedback;
+    
+    float lfoFreq = 0.1f + rate * 4.9f;
+    
+    float minDelayMs = 0.5f;
+    float maxDelayMs = 8.0f;
+    float delayRangeMs = maxDelayMs - minDelayMs;
+    
+    int numSamples = buffer.getNumSamples();
+    int numChannels = buffer.getNumChannels();
+    
+    // === КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: интерполяция позиции чтения ===
+    static float currentDelaySamples = 0.0f;
+    
+    for (int sample = 0; sample < numSamples; ++sample)
+    {
+        float lfo = std::sin(phase);
+        lfo = (lfo + 1.0f) / 2.0f;
+        
+        phase += 2.0f * juce::MathConstants<float>::pi * lfoFreq / sampleRate;
+        if (phase >= juce::MathConstants<float>::twoPi)
+            phase -= juce::MathConstants<float>::twoPi;
+        
+        // Целевая задержка на основе текущего depth
+        float targetDelaySamples = (minDelayMs + lfo * depth * delayRangeMs) * sampleRate / 1000.0f;
+        
+        // Плавная интерполяция позиции чтения (устраняет треск!)
+        currentDelaySamples = currentDelaySamples * 0.99f + targetDelaySamples * 0.01f;
+        
+        for (int channel = 0; channel < numChannels; ++channel)
+        {
+            float* channelData = buffer.getWritePointer(channel);
+            float input = channelData[sample];
+            
+            float readPos = (float)writePosition - currentDelaySamples;
+            if (readPos < 0) readPos += maxDelaySamples;
+            
+            int readPosInt = (int)readPos;
+            float frac = readPos - readPosInt;
+            int readPosNext = readPosInt + 1;
+            if (readPosNext >= maxDelaySamples) readPosNext = 0;
+            
+            float delayed = delayBuffer.getSample(channel, readPosInt) * (1.0f - frac) +
+                            delayBuffer.getSample(channel, readPosNext) * frac;
+            
+            float writeValue = input + delayed * feedback;
+            writeValue = juce::jlimit(-1.0f, 1.0f, writeValue);
+            delayBuffer.setSample(channel, writePosition, writeValue);
+            
+            float output = input * (1.0f - depth) + delayed * depth;
+            
+            channelData[sample] = output;
+        }
+        
+        writePosition++;
+        if (writePosition >= maxDelaySamples)
+            writePosition = 0;
+    }
+}
+
 
 void MistralAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer& midiMessages)
 {
